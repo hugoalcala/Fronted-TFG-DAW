@@ -40,7 +40,10 @@ function Home() {
             >
               Iniciar Sesión
             </button>
-            <button className="btn-outline px-8 py-4 text-lg">
+            <button 
+              onClick={() => navigate('/registro')}
+              className="btn-outline px-8 py-4 text-lg"
+            >
               Registrarse
             </button>
           </div>
