@@ -1,53 +1,69 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@layer base {
+  body {
+    @apply bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50;
+  }
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  a {
+    @apply text-primary-dark hover:text-primary-light transition-colors dark:text-primary-light dark:hover:text-primary-500;
+  }
+
+  h1 {
+    @apply text-h1;
+  }
+
+  h2 {
+    @apply text-h2;
+  }
+
+  h3 {
+    @apply text-h3;
+  }
+
+  body {
+    @apply text-body;
+  }
+
+  small {
+    @apply text-small;
+  }
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+@layer components {
+  /* Botón Primario */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-md py-sm bg-primary-dark text-white rounded-lg font-semibold transition-all hover:bg-primary-light active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-light dark:text-primary-900 dark:hover:bg-primary-500;
+  }
+
+  /* Botón Secundario */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-md py-sm bg-secondary-orange text-white rounded-lg font-semibold transition-all hover:bg-secondary-orange-light active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-secondary-orange-light dark:text-orange-900;
+  }
+
+  /* Botón Outline */
+  .btn-outline {
+    @apply inline-flex items-center justify-center px-md py-sm bg-transparent border-2 border-primary-dark text-primary-dark rounded-lg font-semibold transition-all hover:bg-primary-dark hover:text-white dark:border-primary-light dark:text-primary-light dark:hover:bg-primary-light dark:hover:text-primary-900;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-white dark:bg-gray-900 rounded-lg shadow-light dark:shadow-md border border-gray-200 dark:border-gray-800 p-md;
+  }
+
+  /* Card Hover */
+  .card-hover {
+    @apply card hover:shadow-md dark:hover:shadow-lg transition-shadow;
+  }
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
+/* Modo oscuro - toggle en html */
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
 }
 button:focus,
 button:focus-visible {
