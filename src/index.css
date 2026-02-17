@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   body {
@@ -8,77 +6,43 @@
   }
 
   a {
-    @apply text-primary-dark hover:text-primary-light transition-colors dark:text-primary-light dark:hover:text-primary-500;
+    @apply text-blue-900 hover:text-blue-500 transition-colors dark:text-blue-400 dark:hover:text-blue-300;
   }
 
   h1 {
-    @apply text-h1;
+    @apply text-4xl font-bold;
   }
 
   h2 {
-    @apply text-h2;
+    @apply text-2xl font-semibold;
   }
 
   h3 {
-    @apply text-h3;
+    @apply text-xl font-medium;
   }
 
-  body {
-    @apply text-body;
+  p {
+    @apply text-base;
   }
 
   small {
-    @apply text-small;
+    @apply text-sm;
   }
 }
 
 @layer components {
   /* Botón Primario */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-md py-sm bg-primary-dark text-white rounded-lg font-semibold transition-all hover:bg-primary-light active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-light dark:text-primary-900 dark:hover:bg-primary-500;
+    @apply inline-flex items-center justify-center px-4 py-2 bg-blue-900 text-white rounded-lg font-semibold transition-all hover:bg-blue-500 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-400 dark:text-blue-900 dark:hover:bg-blue-300;
   }
 
   /* Botón Secundario */
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-md py-sm bg-secondary-orange text-white rounded-lg font-semibold transition-all hover:bg-secondary-orange-light active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-secondary-orange-light dark:text-orange-900;
+    @apply inline-flex items-center justify-center px-4 py-2 bg-orange-500 text-white rounded-lg font-semibold transition-all hover:bg-orange-400 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-orange-400 dark:text-orange-900;
   }
 
   /* Botón Outline */
   .btn-outline {
-    @apply inline-flex items-center justify-center px-md py-sm bg-transparent border-2 border-primary-dark text-primary-dark rounded-lg font-semibold transition-all hover:bg-primary-dark hover:text-white dark:border-primary-light dark:text-primary-light dark:hover:bg-primary-light dark:hover:text-primary-900;
-  }
-
-  /* Card */
-  .card {
-    @apply bg-white dark:bg-gray-900 rounded-lg shadow-light dark:shadow-md border border-gray-200 dark:border-gray-800 p-md;
-  }
-
-  /* Card Hover */
-  .card-hover {
-    @apply card hover:shadow-md dark:hover:shadow-lg transition-shadow;
-  }
-}
-
-/* Modo oscuro - toggle en html */
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+    @apply inline-flex items-center justify-center px-4 py-2 bg-transparent border-2 border-blue-900 text-blue-900 rounded-lg font-semibold transition-all hover:bg-blue-900 hover:text-white dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-400 dark:hover:text-blue-900;
   }
 }
