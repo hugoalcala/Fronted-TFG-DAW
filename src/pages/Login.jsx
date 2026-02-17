@@ -4,7 +4,7 @@ import { useTheme } from '../hooks/useTheme'
 
 function Login() {
   const navigate = useNavigate()
-  const { isDark } = useTheme()
+  const { isDark, toggleTheme } = useTheme()
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -41,6 +41,12 @@ function Login() {
             className="text-2xl font-bold text-blue-900 dark:text-blue-400 hover:opacity-80 transition-opacity"
           >
             🎓 EduConnect
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            {isDark ? '☀️' : '🌙'}
           </button>
         </div>
       </nav>
