@@ -1,6 +1,8 @@
+import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
 
 function Home() {
+  const navigate = useNavigate()
   const { isDark, toggleTheme } = useTheme()
 
   return (
@@ -24,7 +26,6 @@ function Home() {
       <section className="bg-gradient-to-br from-white via-blue-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <div className="mb-8">
-            <span className="inline-block text-5xl mb-4">🌟</span>
             <h1 className="text-4xl font-bold text-blue-900 dark:text-white mb-4">
               Bienvenido a EduConnect
             </h1>
@@ -33,7 +34,10 @@ function Home() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button className="btn-primary px-8 py-4 text-lg">
+            <button 
+              onClick={() => navigate('/login')}
+              className="btn-primary px-8 py-4 text-lg"
+            >
               Iniciar Sesión
             </button>
             <button className="btn-outline px-8 py-4 text-lg">
@@ -168,7 +172,7 @@ function Home() {
             © 2026 EduConnect. Conectando educación y comunidad.
           </p>
           <p className="text-gray-400 text-sm">
-            Hecho con ❤️ para estudiantes y educadores
+            Hecho por Hugo Pascual 
           </p>
         </div>
       </footer>
