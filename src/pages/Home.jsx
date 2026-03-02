@@ -162,7 +162,10 @@ function Home() {
           <p className="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
             Empieza ahora y conecta con miles de estudiantes y educadores
           </p>
-          <button className="btn-secondary px-8 py-4 text-lg">
+          <button 
+            onClick={() => navigate('/registro')}
+            className="btn-secondary px-8 py-4 text-lg"
+          >
             Crear Cuenta Ahora
           </button>
         </div>
