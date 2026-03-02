@@ -25,7 +25,6 @@ function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn')
     localStorage.removeItem('user')
-    localStorage.removeItem('googleToken')
     navigate('/login')
   }
 
