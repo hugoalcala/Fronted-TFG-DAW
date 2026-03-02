@@ -170,7 +170,7 @@ function Register() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full btn-primary py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+                className="w-full btn-primary py-3 text-lg mt-6 disabled:opacity-50"
               >
                 {loading ? 'Creando cuenta...' : 'Registrarse'}
               </button>
