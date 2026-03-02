@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { ThemeProvider } from './hooks/useTheme'
 import Home from './pages/Home'
 import Login from './pages/Login'
