@@ -17,14 +17,22 @@ function Login() {
     setError('')
 
     try {
-      // Aquí irá la llamada a la API del backend
-      console.log('Login attempt:', { email, password })
-      // Por ahora solo mostramos un mensaje de éxito simulado
-      setTimeout(() => {
-        // navigate('/dashboard')
-        alert('Login exitoso (simulado)')
+      // Validación temporal - acepta cualquier email/password válido
+      // Esto será reemplazado por una llamada real al backend cuando esté disponible
+      if (email && password) {
+        // Simular delay de red
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Guardar datos en localStorage (temporalmente)
+        localStorage.setItem('user', JSON.stringify({ email }))
+        localStorage.setItem('isLoggedIn', 'true')
+        
+        // Redirigir a Dashboard
+        navigate('/dashboard')
+      } else {
+        setError('Por favor completa todos los campos.')
         setLoading(false)
-      }, 1000)
+      }
     } catch (err) {
       setError('Error al iniciar sesión. Intenta de nuevo.')
       setLoading(false)
