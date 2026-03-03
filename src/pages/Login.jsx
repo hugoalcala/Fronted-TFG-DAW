@@ -36,9 +36,17 @@ function Login() {
 
     try {
       console.log('🔄 Enviando credenciales...')
-      await login(email, password)
-      console.log('✅ Login exitoso, redirigiendo a dashboard')
-      navigate('/dashboard')
+      const response = await login(email, password)
+      console.log('✅ Login exitoso')
+      
+      // Redirigir según el rol del usuario
+      if (response.user?.role === 'admin') {
+        console.log('👑 Usuario admin, redirigiendo a panel de administración')
+        navigate('/admin')
+      } else {
+        console.log('📚 Usuario regular, redirigiendo a dashboard')
+        navigate('/dashboard')
+      }
     } catch (err) {
       console.error('❌ Error en login:', err.message)
       
