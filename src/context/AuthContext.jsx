@@ -86,6 +86,15 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const updateUserRole = (newRole) => {
+    if (user) {
+      const updatedUser = { ...user, role: newRole }
+      setUser(updatedUser)
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+      console.log('✅ Usuario actualizado a rol:', newRole)
+    }
+  }
+
   const value = {
     user,
     loading,
@@ -94,6 +103,7 @@ export const AuthProvider = ({ children }) => {
     register,
     googleCallback,
     logout,
+    updateUserRole,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
