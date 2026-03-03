@@ -1,30 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../context/AuthContext'
 
 function Dashboard() {
   const navigate = useNavigate()
   const { isDark, toggleTheme } = useTheme()
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { user, loading, isAuthenticated, logout } = useAuth()
 
+  // Redirigir a login si no está autenticado
   useEffect(() => {
-    // Verificar si el usuario está logueado
-    const isLoggedIn = localStorage.getItem('isLoggedIn')
-    const userData = localStorage.getItem('user')
-
-    if (isLoggedIn && userData) {
-      setUser(JSON.parse(userData))
-      setLoading(false)
-    } else {
-      // Redirigir a login si no está autenticado
+    if (!loading && !isAuthenticated) {
       navigate('/login')
     }
-  }, [navigate])
+  }, [isAuthenticated, loading, navigate])
 
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn')
-    localStorage.removeItem('user')
+  const handleLogout = async () => {
+    await logout()
     navigate('/login')
   }
 
@@ -37,6 +29,10 @@ function Dashboard() {
         </div>
       </div>
     )
+  }
+
+  if (!user) {
+    return null
   }
 
   return (
@@ -75,10 +71,10 @@ function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold text-blue-900 dark:text-white mb-2">
-                  Bienvenido, {user?.email?.split('@')[0]}!
+                  Bienvenido, {user?.name || user?.email?.split('@')[0]}!
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Haz iniciado sesión correctamente. Este es tu dashboard.
+                  Has iniciado sesión correctamente. Este es tu dashboard.
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
                   Email: {user?.email}

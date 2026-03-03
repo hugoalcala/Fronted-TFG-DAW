@@ -1,16 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../context/AuthContext'
+import authService from '../services/authService'
 
 function Login() {
   const navigate = useNavigate()
   const { isDark, toggleTheme } = useTheme()
+  const { login, isAuthenticated } = useAuth()
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard')
+    }
+  }, [isAuthenticated, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -18,24 +28,10 @@ function Login() {
     setError('')
 
     try {
-      // Validación temporal - acepta cualquier email/password válido
-      // Esto será reemplazado por una llamada real al backend cuando esté disponible
-      if (email && password) {
-        // Simular delay de red
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // Guardar datos en localStorage (temporalmente)
-        localStorage.setItem('user', JSON.stringify({ email }))
-        localStorage.setItem('isLoggedIn', 'true')
-        
-        // Redirigir a Dashboard
-        navigate('/dashboard')
-      } else {
-        setError('Por favor completa todos los campos.')
-        setLoading(false)
-      }
+      await login(email, password)
+      navigate('/dashboard')
     } catch (err) {
-      setError('Error al iniciar sesión. Intenta de nuevo.')
+      setError(err.message || 'Error al iniciar sesión. Intenta de nuevo.')
       setLoading(false)
     }
   }
@@ -45,35 +41,26 @@ function Login() {
     setError('')
     
     try {
-      const token = credentialResponse.credential
+      // Marcar como tipo de autenticación (para logs)
+      sessionStorage.setItem('googleAuthType', 'login')
       
-      // TODO: Cuando el backend esté listo, reemplaza esto con:
-      // const response = await fetch('http://tu-backend.com/api/auth/google', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ token })
-      // })
-      // const data = await response.json()
+      // El backend verifica si el usuario existe en la BD
+      // Si existe → login normal
+      // Si no existe → error (debe registrarse primero)
+      const { google_auth_url } = await authService.getGoogleAuthUrl()
       
-      // Por ahora, guardamos el token y el usuario
-      localStorage.setItem('googleToken', token)
-      localStorage.setItem('isLoggedIn', 'true')
-      localStorage.setItem('user', JSON.stringify({ 
-        email: 'usuario@gmail.com',
-        loginType: 'google'
-      }))
-      
-      navigate('/dashboard')
+      // Redirigir a Google para autenticación
+      window.location.href = google_auth_url
     } catch (err) {
-      setError('Error al iniciar sesión con Google. Intenta de nuevo.')
-    } finally {
+      setError(err.message || 'Error al conectar con Google. Intenta de nuevo.')
       setLoading(false)
     }
   }
 
   const googleLogin = useGoogleLogin({
     onSuccess: handleGoogleSuccess,
-    onError: () => setError('Error al conectar con Google')
+    onError: () => setError('Error al conectar con Google'),
+    flow: 'implicit'
   })
 
   return (
