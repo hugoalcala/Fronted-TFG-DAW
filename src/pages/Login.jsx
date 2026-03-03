@@ -27,11 +27,35 @@ function Login() {
     setLoading(true)
     setError('')
 
+    // Validar campos
+    if (!email || !password) {
+      setError('Por favor completa todos los campos.')
+      setLoading(false)
+      return
+    }
+
     try {
+      console.log('🔄 Enviando credenciales...')
       await login(email, password)
+      console.log('✅ Login exitoso, redirigiendo a dashboard')
       navigate('/dashboard')
     } catch (err) {
-      setError(err.message || 'Error al iniciar sesión. Intenta de nuevo.')
+      console.error('❌ Error en login:', err.message)
+      
+      // Mensajes de error más amigables
+      let mensajeError = err.message
+      
+      if (err.message.includes('Email o contraseña')) {
+        mensajeError = '❌ Email o contraseña incorrectos. Intenta de nuevo.'
+      } else if (err.message.includes('no se pudo conectar')) {
+        mensajeError = '⚠️ No se pudo conectar al servidor. Verifica que esté en línea.'
+      } else if (err.message.includes('no encontrado')) {
+        mensajeError = '📝 Usuario no encontrado. ¿Aún no tienes cuenta? Regístrate.'
+      } else if (!mensajeError) {
+        mensajeError = 'Error al iniciar sesión. Intenta de nuevo.'
+      }
+      
+      setError(mensajeError)
       setLoading(false)
     }
   }

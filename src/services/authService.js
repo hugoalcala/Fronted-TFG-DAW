@@ -47,29 +47,57 @@ const authService = {
    * Response: { message, user, token }
    */
   async login(email, password) {
-    const response = await fetch(`${API_BASE_URL}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email,
-        password,
-      }),
-    })
+    console.log('🔐 Intentando login:', { email })
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Error al iniciar sesión')
-    }
+      console.log('📨 Respuesta status:', response.status)
+      
+      const data = await response.json()
+      console.log('📦 Datos recibidos:', data)
 
-    const data = await response.json()
-    // Guardar token
-    if (data.token) {
-      localStorage.setItem('authToken', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      if (!response.ok) {
+        console.error('❌ Error en login:', data)
+        
+        // Manejar errores específicos del backend
+        if (response.status === 401 || response.status === 422) {
+          throw new Error('Email o contraseña incorrectos.')
+        } else if (response.status === 404) {
+          throw new Error('Usuario no encontrado. Por favor regístrate.')
+        } else {
+          throw new Error(data.message || 'Error al iniciar sesión.')
+        }
+      }
+
+      // Guardar token y usuario
+      if (data.token) {
+        localStorage.setItem('authToken', data.token)
+        localStorage.setItem('user', JSON.stringify(data.user))
+      }
+      
+      console.log('✅ Login exitoso')
+      return data
+    } catch (err) {
+      console.error('❌ Error en login:', err.message)
+      
+      // Detectar error de conexión
+      if (err.message === 'Failed to fetch') {
+        throw new Error('No se pudo conectar al servidor. Verifica tu conexión de internet.')
+      }
+      
+      throw err
     }
-    return data
   },
 
   /**
