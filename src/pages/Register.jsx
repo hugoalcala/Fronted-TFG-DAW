@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../context/AuthContext'
+import authService from '../services/authService'
 
 function Register() {
   const navigate = useNavigate()
   const { isDark, toggleTheme } = useTheme()
+  const { register } = useAuth()
   
   const [nombre, setNombre] = useState('')
   const [apellido, setApellido] = useState('')
@@ -30,19 +33,32 @@ function Register() {
       return
     }
 
+    console.log('🔄 Formulario registro enviado:', { nombre, apellido, email })
     setLoading(true)
 
     try {
-      // Aquí irá la llamada a la API del backend
-      console.log('Register attempt:', { nombre, apellido, email, password })
-      // Por ahora solo mostramos un mensaje de éxito simulado
+      const fullName = `${nombre} ${apellido}`.trim()
+      console.log('📝 Nombre completo:', fullName)
+      
+      const result = await register(fullName, email, password, confirmPassword)
+      console.log('✅ Registro exitoso:', result)
+      
+      // Mostrar mensaje de éxito
+      setError('')
+      // Limpiar formulario
+      setNombre('')
+      setApellido('')
+      setEmail('')
+      setPassword('')
+      setConfirmPassword('')
+      
+      // Navegar a login después de un pequeño delay
       setTimeout(() => {
-        alert('Registro exitoso (simulado)')
         navigate('/login')
-        setLoading(false)
       }, 1000)
     } catch (err) {
-      setError('Error al registrarse. Intenta de nuevo.')
+      console.error('❌ Error en registro:', err.message)
+      setError(err.message || 'Error al registrarse. Intenta de nuevo.')
       setLoading(false)
     }
   }
@@ -52,35 +68,26 @@ function Register() {
     setError('')
     
     try {
-      const token = credentialResponse.credential
+      // Marcar como tipo de autenticación (para logs)
+      sessionStorage.setItem('googleAuthType', 'register')
       
-      // TODO: Cuando el backend esté listo, reemplaza esto con:
-      // const response = await fetch('http://tu-backend.com/api/auth/register/google', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ token })
-      // })
-      // const data = await response.json()
+      // El backend verifica si el usuario existe en la BD
+      // Si existe → error (debe usar login)
+      // Si no existe → crea la cuenta automáticamente
+      const { google_auth_url } = await authService.getGoogleAuthUrl()
       
-      // Por ahora, guardamos el token y el usuario
-      localStorage.setItem('googleToken', token)
-      localStorage.setItem('isLoggedIn', 'true')
-      localStorage.setItem('user', JSON.stringify({ 
-        email: 'usuario@gmail.com',
-        loginType: 'google'
-      }))
-      
-      navigate('/dashboard')
+      // Redirigir a Google para autenticación
+      window.location.href = google_auth_url
     } catch (err) {
-      setError('Error al registrarse con Google. Intenta de nuevo.')
-    } finally {
+      setError(err.message || 'Error al conectar con Google. Intenta de nuevo.')
       setLoading(false)
     }
   }
 
   const googleLogin = useGoogleLogin({
     onSuccess: handleGoogleSuccess,
-    onError: () => setError('Error al conectar con Google')
+    onError: () => setError('Error al conectar con Google'),
+    flow: 'implicit'
   })
 
   return (
