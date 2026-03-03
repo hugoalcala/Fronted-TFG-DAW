@@ -73,13 +73,19 @@ function GoogleCallbackHandler() {
           sessionStorage.removeItem('googleAuthType')
           
           // Si es registro con Google → /login
-          // Si es login con Google → /dashboard
+          // Si es login con Google → verificar rol
           if (authType === 'register') {
             console.log('📝 Google Register exitoso. Redirigiendo a /login para iniciar sesión')
             window.location.href = '/login'
           } else {
-            console.log('✅ Google Login exitoso. Redirigiendo a /dashboard')
-            window.location.href = '/dashboard'
+            // Login con Google: redirigir según rol
+            if (data.user?.role === 'admin') {
+              console.log('👑 Admin detectado. Redirigiendo a /admin')
+              window.location.href = '/admin'
+            } else {
+              console.log('✅ Google Login exitoso. Redirigiendo a /dashboard')
+              window.location.href = '/dashboard'
+            }
           }
         } else {
           // ❌ Error específico según el tipo de operación

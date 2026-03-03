@@ -141,12 +141,6 @@ export default function AdminDashboard() {
             
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate('/dashboard')}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-purple-900 dark:hover:text-purple-400 transition-colors"
-              >
-                📚 Ver Dashboard Normal
-              </button>
-              <button
                 onClick={toggleTheme}
                 className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >

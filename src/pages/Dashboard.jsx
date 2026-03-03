@@ -23,6 +23,14 @@ function Dashboard() {
     }
   }, [isAuthenticated, loading, navigate])
 
+  // Redirigir a admin si el usuario es administrador
+  useEffect(() => {
+    if (!loading && isAuthenticated && user?.role === 'admin') {
+      console.log('👑 Admin detectado, redirigiendo a panel de administración')
+      navigate('/admin')
+    }
+  }, [user, loading, isAuthenticated, navigate])
+
   // Cargar posts del feed
   useEffect(() => {
     const loadPosts = async () => {
