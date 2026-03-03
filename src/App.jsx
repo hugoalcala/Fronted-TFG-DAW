@@ -4,6 +4,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { ThemeProvider } from './hooks/useTheme'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -11,6 +12,7 @@ import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import Teachers from './pages/Teachers'
 import Messages from './pages/Messages'
+import AdminDashboard from './pages/AdminDashboard'
 
 // Google Client ID desde variables de entorno
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID'
@@ -71,13 +73,19 @@ function GoogleCallbackHandler() {
           sessionStorage.removeItem('googleAuthType')
           
           // Si es registro con Google → /login
-          // Si es login con Google → /dashboard
+          // Si es login con Google → verificar rol
           if (authType === 'register') {
             console.log('📝 Google Register exitoso. Redirigiendo a /login para iniciar sesión')
             window.location.href = '/login'
           } else {
-            console.log('✅ Google Login exitoso. Redirigiendo a /dashboard')
-            window.location.href = '/dashboard'
+            // Login con Google: redirigir según rol
+            if (data.user?.role === 'admin') {
+              console.log('👑 Admin detectado. Redirigiendo a /admin')
+              window.location.href = '/admin'
+            } else {
+              console.log('✅ Google Login exitoso. Redirigiendo a /dashboard')
+              window.location.href = '/dashboard'
+            }
           }
         } else {
           // ❌ Error específico según el tipo de operación
@@ -166,6 +174,14 @@ function App() {
                   <ProtectedRoute>
                     <Messages />
                   </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
                 }
               />
               <Route path="/auth/google/callback" element={<GoogleCallbackHandler />} />

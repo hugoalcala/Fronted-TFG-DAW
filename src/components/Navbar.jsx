@@ -29,12 +29,21 @@ export default function Navbar() {
           {/* Menu Desktop */}
           <div className="hidden md:flex items-center gap-6">
             {/* Búsqueda de Profesores */}
-            <button
-              onClick={() => navigate('/teachers')}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
-            >
-              👨‍🏫 Profesores
-            </button>
+            {user?.role !== 'teacher' ? (
+              <button
+                onClick={() => navigate('/teachers')}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
+              >
+                👨‍🏫 Profesores
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/my-classes')}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
+              >
+                📚 Mis Clases
+              </button>
+            )}
 
             {/* Chat/Mensajes */}
             <button
@@ -42,16 +51,19 @@ export default function Navbar() {
               className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors relative"
             >
               💬 Mensajes
-              {/* Badge de nuevos mensajes */}
-              {/* <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span> */}
             </button>
 
-            {/* Perfil */}
+            {/* Perfil con rol */}
             <button
               onClick={() => navigate('/profile')}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
             >
               👤 Perfil
+              {user?.role === 'teacher' && (
+                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+                  Profesor
+                </span>
+              )}
             </button>
 
             {/* Theme Toggle */}
@@ -91,15 +103,27 @@ export default function Navbar() {
         {/* Menu Mobile Desplegable */}
         {menuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
-            <button
-              onClick={() => {
-                navigate('/teachers')
-                setMenuOpen(false)
-              }}
-              className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-            >
-              👨‍🏫 Profesores
-            </button>
+            {user?.role !== 'teacher' ? (
+              <button
+                onClick={() => {
+                  navigate('/teachers')
+                  setMenuOpen(false)
+                }}
+                className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+              >
+                👨‍🏫 Profesores
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  navigate('/my-classes')
+                  setMenuOpen(false)
+                }}
+                className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+              >
+                📚 Mis Clases
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -118,7 +142,7 @@ export default function Navbar() {
               }}
               className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             >
-              👤 Perfil
+              👤 Perfil {user?.role === 'teacher' && <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full ml-2">Profesor</span>}
             </button>
 
             <button

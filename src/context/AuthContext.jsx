@@ -86,6 +86,37 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const updateUserRole = (newRole) => {
+    if (user) {
+      const updatedUser = { ...user, role: newRole }
+      setUser(updatedUser)
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+      console.log('✅ Usuario actualizado a rol:', newRole)
+    }
+  }
+
+  const refreshUser = async () => {
+    setLoading(true)
+    try {
+      console.log('🔄 Refrescando usuario desde el backend...')
+      const currentUser = await authService.getCurrentUser()
+      setUser(currentUser)
+      localStorage.setItem('user', JSON.stringify(currentUser))
+      console.log('✅ Usuario actualizado:', currentUser)
+      return currentUser
+    } catch (error) {
+      console.error('❌ Error al refrescar usuario:', error)
+      // Si el token es inválido, cerrar sesión
+      if (error.message === 'Sesión expirada') {
+        setUser(null)
+        setIsAuthenticated(false)
+      }
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const value = {
     user,
     loading,
@@ -94,6 +125,8 @@ export const AuthProvider = ({ children }) => {
     register,
     googleCallback,
     logout,
+    updateUserRole,
+    refreshUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

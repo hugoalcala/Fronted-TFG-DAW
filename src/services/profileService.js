@@ -197,6 +197,54 @@ export const profileService = {
       throw error
     }
   },
+
+  // Convertirse en profesor
+  async becomeTeacher(teacherData = {}, certificateFile = null) {
+    try {
+      const formData = new FormData()
+      formData.append('subject', teacherData.subject)
+      formData.append('bio', teacherData.bio)
+      
+      if (teacherData.price_per_hour) {
+        formData.append('price_per_hour', teacherData.price_per_hour)
+      }
+      
+      if (certificateFile) {
+        formData.append('certificate', certificateFile)
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/become-teacher`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            // No incluir Content-Type, el browser lo establece automáticamente con boundary para FormData
+          },
+          body: formData,
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to become teacher')
+      }
+
+      const data = await response.json()
+      console.log('✅ Usuario convertido a profesor:', data)
+      
+      // Actualizar localStorage con el usuario actualizado
+      if (data.data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.data.user))
+      }
+      
+      return data
+
+    } catch (error) {
+      console.error('❌ Error becoming teacher:', error)
+      throw error
+    }
+  },
 }
 
 export default profileService
