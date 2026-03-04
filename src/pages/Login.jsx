@@ -4,6 +4,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../context/AuthContext'
 import authService from '../services/authService'
+import ForgotPasswordModal from '../components/ForgotPasswordModal'
 
 function Login() {
   const navigate = useNavigate()
@@ -14,6 +15,7 @@ function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
 
   // Redirigir si ya está autenticado
   useEffect(() => {
@@ -178,9 +180,13 @@ function Login() {
                     Recuérdame
                   </span>
                 </label>
-                <a href="#" className="text-sm text-blue-900 dark:text-blue-400 hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordOpen(true)}
+                  className="text-sm text-blue-900 dark:text-blue-400 hover:underline"
+                >
                   ¿Olvidaste tu contraseña?
-                </a>
+                </button>
               </div>
 
               {/* Submit Button */}
@@ -235,6 +241,12 @@ function Login() {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal 
+        isOpen={forgotPasswordOpen} 
+        onClose={() => setForgotPasswordOpen(false)} 
+      />
     </>
   )
 }

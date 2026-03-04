@@ -251,6 +251,76 @@ const authService = {
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
   },
+
+  // === RECUPERACIÓN DE CONTRASEÑA ===
+
+  /**
+   * POST /forgot-password
+   * Body: { email }
+   * Response: { message }
+   * Verifica si el email existe en la base de datos
+   */
+  async verifyEmailExists(email) {
+    console.log('🔍 Verificando si el email existe:', { email })
+    
+    const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    })
+
+    console.log('📨 Respuesta status:', response.status)
+    
+    const data = await response.json()
+    console.log('📦 Datos recibidos:', data)
+    
+    if (!response.ok) {
+      console.error('❌ Error verificando email:', data)
+      throw new Error(data.message || 'El email no está registrado.')
+    }
+
+    console.log('✅ Email verificado')
+    return data
+  },
+
+  /**
+   * POST /reset-password
+   * Body: { email, password, password_confirmation }
+   * Response: { message, user }
+   * Cambia la contraseña del usuario después de verificar el email
+   */
+  async resetPassword(email, newPassword, passwordConfirmation) {
+    console.log('🔄 Resetando contraseña para:', { email })
+    
+    const response = await fetch(`${API_BASE_URL}/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password: newPassword,
+        password_confirmation: passwordConfirmation,
+      }),
+    })
+
+    console.log('📨 Respuesta status:', response.status)
+    
+    const data = await response.json()
+    console.log('📦 Datos recibidos:', data)
+    
+    if (!response.ok) {
+      console.error('❌ Error resetando contraseña:', data)
+      throw new Error(data.message || 'Error al cambiar la contraseña.')
+    }
+
+    console.log('✅ Contraseña cambiada exitosamente')
+    return data
+  },
 }
 
 export default authService
