@@ -39,6 +39,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
       console.log('✅ Email verificado, pasando a cambio de contraseña')
       setStep('password')
       setError('')
+      setLoading(false)
     } catch (err) {
       console.error('❌ Error verificando email:', err.message)
       setError(err.message || 'Error al verificar el email.')
