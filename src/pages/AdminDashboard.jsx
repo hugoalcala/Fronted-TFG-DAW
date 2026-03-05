@@ -4,6 +4,10 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../hooks/useTheme'
 import adminService from '../services/adminService'
 
+// URL base del backend (sin /api) para archivos estáticos
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+const BACKEND_URL = API_BASE_URL.replace(/\/api$/, '') // Remueve /api del final
+
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -493,7 +497,7 @@ export default function AdminDashboard() {
                               <div>
                                 <label className="text-xs text-gray-600 dark:text-gray-400">Precio/hora</label>
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {teacher.price_per_hour ? `$${teacher.price_per_hour}` : 'No especificado'}
+                                  {teacher.price_per_hour != null ? `$${teacher.price_per_hour}` : 'No especificado'}
                                 </p>
                               </div>
                             </div>
@@ -506,7 +510,7 @@ export default function AdminDashboard() {
                             <div className="mb-4">
                               {teacher.certificate_path && (
                                 <a
-                                  href={`http://localhost:8000/storage/${teacher.certificate_path}`}
+                                  href={`${BACKEND_URL}/storage/${teacher.certificate_path}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-blue-600 dark:text-blue-400 hover:underline text-sm inline-flex items-center gap-2"

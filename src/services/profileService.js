@@ -237,10 +237,21 @@ export const profileService = {
         }
         
         // Intentar parsear el error como JSON
+        let errorData = null
+        let jsonError = null
+        
         try {
-          const errorData = await response.json()
-          throw new Error(errorData.message || 'Failed to become teacher')
-        } catch (jsonError) {
+          errorData = await response.json()
+        } catch (err) {
+          jsonError = err
+        }
+        
+        // Lanzar error con el mensaje del backend si existe, sino usar status/statusText
+        if (errorData && errorData.message) {
+          throw new Error(errorData.message)
+        } else if (jsonError) {
+          throw new Error(`Error ${response.status}: ${response.statusText} (no se pudo parsear respuesta JSON)`)
+        } else {
           throw new Error(`Error ${response.status}: ${response.statusText}`)
         }
       }

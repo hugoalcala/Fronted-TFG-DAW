@@ -59,7 +59,7 @@ export default function Profile() {
   }
 
   const handleBecomeTeacher = async () => {
-    if (!teacherData.subjects || teacherData.subjects.length === 0 || !teacherData.bio) {
+    if (!teacherData.subjects || teacherData.subjects.length === 0 || !teacherData.bio || teacherData.bio.trim().length === 0) {
       alert('Por favor selecciona al menos una materia y escribe tu biografía')
       return
     }
