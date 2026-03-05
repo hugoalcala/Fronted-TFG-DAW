@@ -28,19 +28,27 @@ const adminService = {
    */
   async getStats() {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+      const url = `${API_BASE_URL}/admin/stats`
+      console.log('🔍 Llamando a stats:', url)
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       })
 
+      console.log('📡 Stats response status:', response.status)
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Error al obtener estadísticas')
+        const text = await response.text()
+        console.error('❌ Error en stats:', text)
+        throw new Error(`Error al obtener estadísticas: ${response.status}`)
       }
 
-      return await response.json()
+      const data = await response.json()
+      console.log('✅ Stats recibidas:', data)
+      return data
     } catch (error) {
-      console.error('Error en getStats:', error)
+      console.error('💥 Error en getStats:', error)
       throw error
     }
   },
@@ -51,20 +59,36 @@ const adminService = {
    */
   async getPendingTeachers() {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/pending-teachers`, {
+      const url = `${API_BASE_URL}/admin/pending-teachers`
+      console.log('🔍 Llamando a pending-teachers:', url)
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       })
 
+      console.log('📡 Pending teachers response status:', response.status)
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Error al obtener profesores pendientes')
+        const text = await response.text()
+        console.error('❌ Error en pending-teachers:', text)
+        
+        // Si es 404, devolver array vacío en lugar de error
+        if (response.status === 404) {
+          console.warn('⚠️ Endpoint no encontrado, devolviendo array vacío')
+          return []
+        }
+        
+        throw new Error(`Error al obtener profesores pendientes: ${response.status}`)
       }
 
-      return await response.json()
+      const data = await response.json()
+      console.log('✅ Pending teachers recibidos:', data)
+      return data
     } catch (error) {
-      console.error('Error en getPendingTeachers:', error)
-      throw error
+      console.error('💥 Error en getPendingTeachers:', error)
+      // Si el endpoint no existe, devolver array vacío
+      return []
     }
   },
 
@@ -138,20 +162,36 @@ const adminService = {
       if (params.perPage) queryParams.append('per_page', params.perPage)
 
       const url = `${API_BASE_URL}/admin/users${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+      
+      console.log('🔍 Llamando a:', url)
+      console.log('📦 Headers:', getAuthHeaders())
 
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       })
 
+      console.log('📡 Response status:', response.status)
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Error al obtener usuarios')
+        // Intentar obtener el texto de la respuesta para debug
+        const text = await response.text()
+        console.error('❌ Error response:', text)
+        
+        // Intentar parsear como JSON
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.message || `Error ${response.status}: ${response.statusText}`)
+        } catch {
+          throw new Error(`Error ${response.status}: El servidor respondió con un error. Verifica que el endpoint ${url} existe en el backend.`)
+        }
       }
 
-      return await response.json()
+      const data = await response.json()
+      console.log('✅ Usuarios recibidos:', data)
+      return data
     } catch (error) {
-      console.error('Error en getUsers:', error)
+      console.error('💥 Error en getUsers:', error)
       throw error
     }
   },

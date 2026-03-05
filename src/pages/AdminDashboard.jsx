@@ -18,13 +18,42 @@ export default function AdminDashboard() {
     totalPosts: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  
+  // Filtros y búsqueda de usuarios
+  const [searchTerm, setSearchTerm] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [perPage] = useState(10)
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  
+  // Modal de edición
+  const [editingUser, setEditingUser] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  
+  // Notificación toast
+  const [notification, setNotification] = useState(null)
+  
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type })
+    setTimeout(() => setNotification(null), 3000)
+  }
 
   useEffect(() => {
     loadAdminData()
+    loadUsers() // Cargar usuarios al inicio también
   }, [])
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      loadUsers()
+    }
+  }, [activeTab, searchTerm, roleFilter, currentPage])
 
   const loadAdminData = async () => {
     setLoading(true)
+    setError(null)
     try {
       // Cargar estadísticas
       const statsData = await adminService.getStats()
@@ -33,49 +62,49 @@ export default function AdminDashboard() {
       // Cargar profesores pendientes
       const teachersData = await adminService.getPendingTeachers()
       setPendingTeachers(teachersData)
-
-      // Cargar usuarios
-      const usersData = await adminService.getUsers()
-      setUsers(usersData)
     } catch (error) {
       console.error('Error loading admin data:', error)
-      // Si falla, mostrar mock data para desarrollo
-      setStats({
-        totalUsers: 124,
-        totalTeachers: 15,
-        pendingApplications: 3,
-        totalPosts: 48,
-      })
-
-      setPendingTeachers([
-        {
-          id: 1,
-          name: 'Juan García',
-          email: 'juan@example.com',
-          subject: 'Matemáticas',
-          bio: 'Ingeniero con 10 años de experiencia',
-          price_per_hour: '30',
-          certificate_url: '/certificates/cert1.pdf',
-          created_at: '2026-03-01',
-        },
-        {
-          id: 2,
-          name: 'María López',
-          email: 'maria@example.com',
-          subject: 'Programación',
-          bio: 'Desarrolladora Full Stack',
-          price_per_hour: '35',
-          certificate_url: '/certificates/cert2.pdf',
-          created_at: '2026-03-02',
-        },
-      ])
-
-      setUsers([
-        { id: 1, name: 'Ana Rodríguez', email: 'ana@example.com', role: 'student', created_at: '2026-01-15' },
-        { id: 2, name: 'Carlos Ruiz', email: 'carlos@example.com', role: 'teacher', created_at: '2026-02-20' },
-      ])
+      setError(error.message || 'Error al cargar datos del panel de administración')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadUsers = async () => {
+    setLoadingUsers(true)
+    try {
+      const params = {
+        page: currentPage,
+        perPage: perPage,
+        role: roleFilter !== 'all' ? roleFilter : undefined,
+        search: searchTerm || undefined,
+      }
+
+      console.log('Cargando usuarios con params:', params)
+      const response = await adminService.getUsers(params)
+      console.log('Respuesta de usuarios:', response)
+      
+      // La respuesta incluye paginación de Laravel
+      if (Array.isArray(response)) {
+        // Si la respuesta es un array directo
+        setUsers(response)
+        setTotalPages(1)
+      } else if (response.data) {
+        // Si viene con paginación de Laravel
+        setUsers(response.data)
+        setTotalPages(response.last_page || 1)
+        setCurrentPage(response.current_page || currentPage)
+      } else {
+        // Si no hay estructura reconocida
+        console.warn('Estructura de respuesta no reconocida:', response)
+        setUsers([])
+      }
+    } catch (error) {
+      console.error('Error loading users:', error)
+      showNotification('Error al cargar usuarios: ' + error.message, 'error')
+      setUsers([])
+    } finally {
+      setLoadingUsers(false)
     }
   }
 
@@ -84,12 +113,21 @@ export default function AdminDashboard() {
 
     try {
       await adminService.approveTeacher(teacherId)
-      alert('✅ Profesor aprobado exitosamente')
-      // Recargar datos para actualizar estadísticas
-      await loadAdminData()
+      
+      // Remover de la lista de pendientes localmente
+      setPendingTeachers(pendingTeachers.filter(t => t.id !== teacherId))
+      
+      // Actualizar stats
+      setStats(prev => ({
+        ...prev,
+        pendingApplications: Math.max(0, prev.pendingApplications - 1),
+        totalTeachers: prev.totalTeachers + 1
+      }))
+      
+      showNotification('Profesor aprobado exitosamente', 'success')
     } catch (error) {
       console.error('Error al aprobar:', error)
-      alert('Error al aprobar: ' + error.message)
+      showNotification('Error al aprobar: ' + error.message, 'error')
     }
   }
 
@@ -99,13 +137,93 @@ export default function AdminDashboard() {
 
     try {
       await adminService.rejectTeacher(teacherId, reason)
-      alert('❌ Solicitud rechazada')
-      // Recargar datos para actualizar estadísticas
-      await loadAdminData()
+      
+      // Remover de la lista de pendientes localmente
+      setPendingTeachers(pendingTeachers.filter(t => t.id !== teacherId))
+      
+      // Actualizar stats
+      setStats(prev => ({
+        ...prev,
+        pendingApplications: Math.max(0, prev.pendingApplications - 1)
+      }))
+      
+      showNotification('Solicitud rechazada', 'success')
     } catch (error) {
       console.error('Error al rechazar:', error)
-      alert('Error al rechazar: ' + error.message)
+      showNotification('Error al rechazar: ' + error.message, 'error')
     }
+  }
+
+  const handleEditUser = (user) => {
+    setEditingUser({ ...user })
+    setShowEditModal(true)
+  }
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return
+
+    try {
+      await adminService.updateUser(editingUser.id, {
+        name: editingUser.name,
+        email: editingUser.email,
+        role: editingUser.role,
+      })
+      
+      // Actualizar localmente en lugar de recargar todo
+      setUsers(users.map(u => 
+        u.id === editingUser.id 
+          ? { ...u, name: editingUser.name, email: editingUser.email, role: editingUser.role }
+          : u
+      ))
+      
+      // Solo recargar stats si cambió el rol (afecta contadores)
+      const originalUser = users.find(u => u.id === editingUser.id)
+      if (originalUser && originalUser.role !== editingUser.role) {
+        const statsData = await adminService.getStats()
+        setStats(statsData)
+      }
+      
+      setShowEditModal(false)
+      setEditingUser(null)
+      showNotification('Usuario actualizado exitosamente', 'success')
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error)
+      showNotification('Error al actualizar: ' + error.message, 'error')
+    }
+  }
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (!confirm(`¿Estás seguro de eliminar al usuario "${userName}"? Esta acción no se puede deshacer.`)) {
+      return
+    }
+
+    try {
+      await adminService.deleteUser(userId)
+      
+      // Actualizar localmente eliminando el usuario de la lista
+      setUsers(users.filter(u => u.id !== userId))
+      
+      // Actualizar stats solo para el contador
+      setStats(prev => ({
+        ...prev,
+        totalUsers: prev.totalUsers - 1
+      }))
+      
+      showNotification('Usuario eliminado exitosamente', 'success')
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error)
+      showNotification('Error al eliminar: ' + error.message, 'error')
+    }
+  }
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value)
+    setCurrentPage(1) // Reset a la primera página
+  }
+
+  const handleRoleFilterChange = (e) => {
+    setRoleFilter(e.target.value)
+    setCurrentPage(1) // Reset a la primera página
   }
 
   const handleLogout = async () => {
@@ -119,6 +237,24 @@ export default function AdminDashboard() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 dark:border-blue-400 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Cargando panel de administración...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !stats.totalUsers) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Error al cargar datos</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <button
+            onClick={loadAdminData}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     )
@@ -370,66 +506,241 @@ export default function AdminDashboard() {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Gestión de Usuarios</h2>
                 
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-100 dark:bg-gray-800">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                          Usuario
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                          Email
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                          Rol
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                          Registro
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                          Acciones
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {users.map((u) => (
-                        <tr key={u.id}>
-                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{u.name}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{u.email}</td>
-                          <td className="px-4 py-3 text-sm">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                u.role === 'teacher'
-                                  ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                                  : u.role === 'admin'
-                                  ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                                  : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                              }`}
-                            >
-                              {u.role}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                            {new Date(u.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <button className="text-blue-600 dark:text-blue-400 hover:underline mr-3">
-                              Editar
-                            </button>
-                            <button className="text-red-600 dark:text-red-400 hover:underline">
-                              Eliminar
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {/* Filtros y búsqueda */}
+                <div className="mb-6 flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre o email..."
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={roleFilter}
+                      onChange={handleRoleFilterChange}
+                      className="w-full md:w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="all">Todos los roles</option>
+                      <option value="student">Estudiantes</option>
+                      <option value="teacher">Profesores</option>
+                      <option value="admin">Administradores</option>
+                    </select>
+                  </div>
                 </div>
+
+                {/* Tabla de usuarios */}
+                {loadingUsers ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Cargando usuarios...</p>
+                  </div>
+                ) : users.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">👥</div>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {searchTerm || roleFilter !== 'all' 
+                        ? 'No se encontraron usuarios con esos filtros' 
+                        : 'No hay usuarios registrados'}
+                    </p>
+                    <button
+                      onClick={loadUsers}
+                      className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                    >
+                      🔄 Recargar
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-100 dark:bg-gray-800">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Usuario
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Email
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Rol
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Registro
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Acciones
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {users.map((u) => (
+                            <tr key={u.id}>
+                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{u.name}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{u.email}</td>
+                              <td className="px-4 py-3 text-sm">
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    u.role === 'teacher'
+                                      ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                                      : u.role === 'admin'
+                                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                                      : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                                  }`}
+                                >
+                                  {u.role}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                {new Date(u.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <button 
+                                  onClick={() => handleEditUser(u)}
+                                  className="text-blue-600 dark:text-blue-400 hover:underline mr-3"
+                                >
+                                  Editar
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteUser(u.id, u.name)}
+                                  className="text-red-600 dark:text-red-400 hover:underline"
+                                >
+                                  Eliminar
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Paginación */}
+                    {totalPages > 1 && (
+                      <div className="mt-6 flex items-center justify-between">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Página {currentPage} de {totalPages}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            ← Anterior
+                          </button>
+                          <button
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Siguiente →
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Modal de Edición de Usuario */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-800">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Editar Usuario
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nombre
+                </label>
+                <input
+                  type="text"
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Rol
+                </label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="student">Estudiante</option>
+                  <option value="teacher">Profesor</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleUpdateUser}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Guardar Cambios
+              </button>
+              <button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setEditingUser(null)
+                }}
+                className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Notificación Toast */}
+      {notification && (
+        <div className="fixed bottom-4 right-4 z-50 animate-slide-up">
+          <div className={`rounded-lg shadow-lg px-6 py-4 flex items-center gap-3 ${
+            notification.type === 'success'
+              ? 'bg-green-600 text-white'
+              : notification.type === 'error'
+              ? 'bg-red-600 text-white'
+              : 'bg-blue-600 text-white'
+          }`}>
+            <span className="text-2xl">
+              {notification.type === 'success' ? '✅' : notification.type === 'error' ? '❌' : 'ℹ️'}
+            </span>
+            <span className="font-medium">{notification.message}</span>
+            <button
+              onClick={() => setNotification(null)}
+              className="ml-2 text-white hover:text-gray-200 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
