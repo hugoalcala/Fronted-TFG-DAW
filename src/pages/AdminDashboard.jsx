@@ -93,47 +93,21 @@ export default function AdminDashboard() {
       const response = await adminService.getUsers(params)
       console.log('Respuesta de usuarios:', response)
       
-      let usersData = []
-      
       // La respuesta incluye paginación de Laravel
       if (Array.isArray(response)) {
-        // Si la respuesta es un array directo
-        usersData = response
+        // Si la respuesta es un array directo sin paginación
+        setUsers(response)
         setTotalPages(1)
       } else if (response.data) {
-        // Si viene con paginación de Laravel
-        usersData = response.data
+        // Si viene con paginación de Laravel - confiar en el filtrado del backend
+        setUsers(response.data)
         setTotalPages(response.last_page || 1)
         setCurrentPage(response.current_page || currentPage)
       } else {
         // Si no hay estructura reconocida
         console.warn('Estructura de respuesta no reconocida:', response)
-        usersData = []
+        setUsers([])
       }
-      
-      // Filtro adicional por fechas en el frontend (por si el backend no filtra correctamente)
-      if (startDate || endDate) {
-        usersData = usersData.filter(user => {
-          const userDate = new Date(user.created_at)
-          
-          // Normalizar fechas a medianoche para comparación correcta
-          const start = startDate ? new Date(startDate + 'T00:00:00') : null
-          const end = endDate ? new Date(endDate + 'T23:59:59') : null
-          
-          if (start && end) {
-            return userDate >= start && userDate <= end
-          } else if (start) {
-            return userDate >= start
-          } else if (end) {
-            return userDate <= end
-          }
-          return true
-        })
-        
-        console.log('Usuarios después de filtrar por fechas:', usersData.length)
-      }
-      
-      setUsers(usersData)
     } catch (error) {
       console.error('Error loading users:', error)
       showNotification('Error al cargar usuarios: ' + error.message, 'error')
@@ -646,13 +620,14 @@ export default function AdminDashboard() {
                   </div>
                   
                   {/* Indicador de filtros activos */}
-                  {(searchTerm || roleFilter !== 'all' || startDate || endDate) && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  {(searchTerm || roleFilter !== 'all' || startDate || endDate || sortOrder !== 'desc') && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <span>Filtros activos:</span>
                       {searchTerm && <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">🔍 Búsqueda: "{searchTerm}"</span>}
                       {roleFilter !== 'all' && <span className="px-2 py-1 bg-green-100 dark:bg-green-900 rounded">👤 Rol: {roleFilter}</span>}
                       {startDate && <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 rounded">📅 Desde: {startDate}</span>}
                       {endDate && <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 rounded">📅 Hasta: {endDate}</span>}
+                      {sortOrder !== 'desc' && <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 rounded">↕️ Orden: {sortOrder === 'asc' ? 'Más antiguo primero' : 'Más reciente primero'}</span>}
                     </div>
                   )}
                 </div>
@@ -667,7 +642,7 @@ export default function AdminDashboard() {
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">👥</div>
                     <p className="text-gray-600 dark:text-gray-400">
-                      {searchTerm || roleFilter !== 'all' || startDate || endDate
+                      {searchTerm || roleFilter !== 'all' || startDate || endDate || sortOrder !== 'desc'
                         ? 'No se encontraron usuarios con esos filtros' 
                         : 'No hay usuarios registrados'}
                     </p>
