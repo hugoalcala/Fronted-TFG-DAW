@@ -147,6 +147,58 @@ const adminService = {
   },
 
   /**
+   * Obtener y mostrar el certificado de una solicitud de profesor
+   * Descarga el PDF con autenticación y lo abre en una nueva pestaña
+   * 
+   * @param {number} teacherId - ID de la solicitud de profesor
+   */
+  async viewCertificate(teacherId) {
+    // Abrir popup inmediatamente para preservar el gesto del usuario
+    const popup = window.open('', '_blank')
+    
+    try {
+      const url = `${API_BASE_URL}/admin/teacher-request/${teacherId}/certificate`
+      console.log('🔍 Intentando cargar certificado desde:', url)
+      console.log('📋 Teacher ID:', teacherId)
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`
+        }
+      })
+
+      console.log('📡 Response status:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Error response:', errorText)
+        if (popup) popup.close()
+        throw new Error(`Error ${response.status}: No se pudo cargar el certificado`)
+      }
+
+      // Obtener el blob del PDF
+      const blob = await response.blob()
+      console.log('✅ PDF cargado, tamaño:', blob.size, 'bytes')
+      
+      // Crear una URL temporal para el blob
+      const blobUrl = window.URL.createObjectURL(blob)
+      
+      // Navegar el popup ya abierto a la URL del blob
+      if (popup) {
+        popup.location.href = blobUrl
+      }
+      
+      // Liberar la URL después de un tiempo más largo
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000)
+    } catch (error) {
+      console.error('💥 Error al cargar certificado:', error)
+      if (popup) popup.close()
+      throw error
+    }
+  },
+
+  /**
    * Obtener lista de todos los usuarios
    * GET /api/admin/users
    * 
