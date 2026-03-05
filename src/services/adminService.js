@@ -153,6 +153,9 @@ const adminService = {
    * @param {number} teacherId - ID de la solicitud de profesor
    */
   async viewCertificate(teacherId) {
+    // Abrir popup inmediatamente para preservar el gesto del usuario
+    const popup = window.open('', '_blank')
+    
     try {
       const url = `${API_BASE_URL}/admin/teacher-request/${teacherId}/certificate`
       console.log('🔍 Intentando cargar certificado desde:', url)
@@ -170,6 +173,7 @@ const adminService = {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('❌ Error response:', errorText)
+        if (popup) popup.close()
         throw new Error(`Error ${response.status}: No se pudo cargar el certificado`)
       }
 
@@ -180,13 +184,16 @@ const adminService = {
       // Crear una URL temporal para el blob
       const blobUrl = window.URL.createObjectURL(blob)
       
-      // Abrir en nueva pestaña
-      window.open(blobUrl, '_blank')
+      // Navegar el popup ya abierto a la URL del blob
+      if (popup) {
+        popup.location.href = blobUrl
+      }
       
-      // Liberar la URL después de un tiempo
-      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100)
+      // Liberar la URL después de un tiempo más largo
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000)
     } catch (error) {
       console.error('💥 Error al cargar certificado:', error)
+      if (popup) popup.close()
       throw error
     }
   },
