@@ -28,6 +28,11 @@ export default function AdminDashboard() {
   const [perPage] = useState(10)
   const [loadingUsers, setLoadingUsers] = useState(false)
   
+  // Filtros de fecha y ordenamiento
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [sortOrder, setSortOrder] = useState('desc') // desc = más reciente primero, asc = más antiguo primero
+  
   // Modal de edición
   const [editingUser, setEditingUser] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -49,7 +54,7 @@ export default function AdminDashboard() {
     if (activeTab === 'users') {
       loadUsers()
     }
-  }, [activeTab, searchTerm, roleFilter, currentPage])
+  }, [activeTab, searchTerm, roleFilter, currentPage, startDate, endDate, sortOrder])
 
   const loadAdminData = async () => {
     setLoading(true)
@@ -78,27 +83,57 @@ export default function AdminDashboard() {
         perPage: perPage,
         role: roleFilter !== 'all' ? roleFilter : undefined,
         search: searchTerm || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        sortBy: 'created_at',
+        sortOrder: sortOrder,
       }
 
       console.log('Cargando usuarios con params:', params)
       const response = await adminService.getUsers(params)
       console.log('Respuesta de usuarios:', response)
       
+      let usersData = []
+      
       // La respuesta incluye paginación de Laravel
       if (Array.isArray(response)) {
         // Si la respuesta es un array directo
-        setUsers(response)
+        usersData = response
         setTotalPages(1)
       } else if (response.data) {
         // Si viene con paginación de Laravel
-        setUsers(response.data)
+        usersData = response.data
         setTotalPages(response.last_page || 1)
         setCurrentPage(response.current_page || currentPage)
       } else {
         // Si no hay estructura reconocida
         console.warn('Estructura de respuesta no reconocida:', response)
-        setUsers([])
+        usersData = []
       }
+      
+      // Filtro adicional por fechas en el frontend (por si el backend no filtra correctamente)
+      if (startDate || endDate) {
+        usersData = usersData.filter(user => {
+          const userDate = new Date(user.created_at)
+          
+          // Normalizar fechas a medianoche para comparación correcta
+          const start = startDate ? new Date(startDate + 'T00:00:00') : null
+          const end = endDate ? new Date(endDate + 'T23:59:59') : null
+          
+          if (start && end) {
+            return userDate >= start && userDate <= end
+          } else if (start) {
+            return userDate >= start
+          } else if (end) {
+            return userDate <= end
+          }
+          return true
+        })
+        
+        console.log('Usuarios después de filtrar por fechas:', usersData.length)
+      }
+      
+      setUsers(usersData)
     } catch (error) {
       console.error('Error loading users:', error)
       showNotification('Error al cargar usuarios: ' + error.message, 'error')
@@ -224,6 +259,30 @@ export default function AdminDashboard() {
   const handleRoleFilterChange = (e) => {
     setRoleFilter(e.target.value)
     setCurrentPage(1) // Reset a la primera página
+  }
+
+  const handleStartDateChange = (e) => {
+    setStartDate(e.target.value)
+    setCurrentPage(1)
+  }
+
+  const handleEndDateChange = (e) => {
+    setEndDate(e.target.value)
+    setCurrentPage(1)
+  }
+
+  const handleSortOrderChange = (e) => {
+    setSortOrder(e.target.value)
+    setCurrentPage(1)
+  }
+
+  const clearFilters = () => {
+    setSearchTerm('')
+    setRoleFilter('all')
+    setStartDate('')
+    setEndDate('')
+    setSortOrder('desc')
+    setCurrentPage(1)
   }
 
   const handleLogout = async () => {
@@ -507,28 +566,95 @@ export default function AdminDashboard() {
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Gestión de Usuarios</h2>
                 
                 {/* Filtros y búsqueda */}
-                <div className="mb-6 flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      placeholder="Buscar por nombre o email..."
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
+                <div className="mb-6 space-y-4">
+                  {/* Primera fila: Búsqueda y Rol */}
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Buscar
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Buscar por nombre o email..."
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="w-full md:w-48">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Rol
+                      </label>
+                      <select
+                        value={roleFilter}
+                        onChange={handleRoleFilterChange}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="all">Todos los roles</option>
+                        <option value="student">Estudiantes</option>
+                        <option value="teacher">Profesores</option>
+                        <option value="admin">Administradores</option>
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <select
-                      value={roleFilter}
-                      onChange={handleRoleFilterChange}
-                      className="w-full md:w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="all">Todos los roles</option>
-                      <option value="student">Estudiantes</option>
-                      <option value="teacher">Profesores</option>
-                      <option value="admin">Administradores</option>
-                    </select>
+                  
+                  {/* Segunda fila: Fechas y Ordenamiento */}
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Desde
+                      </label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={handleStartDateChange}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Hasta
+                      </label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={handleEndDateChange}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="w-full md:w-56">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Ordenar por fecha
+                      </label>
+                      <select
+                        value={sortOrder}
+                        onChange={handleSortOrderChange}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="desc">Más reciente primero</option>
+                        <option value="asc">Más antiguo primero</option>
+                      </select>
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        onClick={clearFilters}
+                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium whitespace-nowrap"
+                      >
+                        🔄 Limpiar Filtros
+                      </button>
+                    </div>
                   </div>
+                  
+                  {/* Indicador de filtros activos */}
+                  {(searchTerm || roleFilter !== 'all' || startDate || endDate) && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span>Filtros activos:</span>
+                      {searchTerm && <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">🔍 Búsqueda: "{searchTerm}"</span>}
+                      {roleFilter !== 'all' && <span className="px-2 py-1 bg-green-100 dark:bg-green-900 rounded">👤 Rol: {roleFilter}</span>}
+                      {startDate && <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 rounded">📅 Desde: {startDate}</span>}
+                      {endDate && <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 rounded">📅 Hasta: {endDate}</span>}
+                    </div>
+                  )}
                 </div>
 
                 {/* Tabla de usuarios */}
@@ -541,7 +667,7 @@ export default function AdminDashboard() {
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">👥</div>
                     <p className="text-gray-600 dark:text-gray-400">
-                      {searchTerm || roleFilter !== 'all' 
+                      {searchTerm || roleFilter !== 'all' || startDate || endDate
                         ? 'No se encontraron usuarios con esos filtros' 
                         : 'No hay usuarios registrados'}
                     </p>

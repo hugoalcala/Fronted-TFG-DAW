@@ -151,6 +151,10 @@ const adminService = {
    * @param {string} params.role - Filtrar por rol (student, teacher, admin)
    * @param {number} params.page - Página actual
    * @param {number} params.perPage - Usuarios por página
+   * @param {string} params.startDate - Fecha inicio (YYYY-MM-DD)
+   * @param {string} params.endDate - Fecha fin (YYYY-MM-DD)
+   * @param {string} params.sortBy - Campo para ordenar (created_at)
+   * @param {string} params.sortOrder - Orden (asc, desc)
    */
   async getUsers(params = {}) {
     try {
@@ -160,6 +164,10 @@ const adminService = {
       if (params.role) queryParams.append('role', params.role)
       if (params.page) queryParams.append('page', params.page)
       if (params.perPage) queryParams.append('per_page', params.perPage)
+      if (params.startDate) queryParams.append('start_date', params.startDate)
+      if (params.endDate) queryParams.append('end_date', params.endDate)
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy)
+      if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder)
 
       const url = `${API_BASE_URL}/admin/users${queryParams.toString() ? '?' + queryParams.toString() : ''}`
       
