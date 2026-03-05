@@ -4,6 +4,10 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../hooks/useTheme'
 import adminService from '../services/adminService'
 
+// URL base del backend (sin /api) para archivos estáticos
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+const BACKEND_URL = API_BASE_URL.replace(/\/api\/?$/, '') // Remueve /api o /api/ del final
+
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -62,11 +66,18 @@ export default function AdminDashboard() {
     try {
       // Cargar estadísticas
       const statsData = await adminService.getStats()
-      setStats(statsData)
-
+      
       // Cargar profesores pendientes
       const teachersData = await adminService.getPendingTeachers()
-      setPendingTeachers(teachersData)
+      // Asegurar que sea un array
+      const teachersArray = Array.isArray(teachersData) ? teachersData : []
+      setPendingTeachers(teachersArray)
+      
+      // Actualizar stats con el conteo real de pendientes
+      setStats({
+        ...statsData,
+        pendingApplications: teachersArray.length
+      })
     } catch (error) {
       console.error('Error loading admin data:', error)
       setError(error.message || 'Error al cargar datos del panel de administración')
@@ -470,9 +481,9 @@ export default function AdminDashboard() {
                               </div>
                               <div>
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                  {teacher.name}
+                                  {teacher.user?.name || teacher.name}
                                 </h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{teacher.email}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{teacher.user?.email || teacher.email}</p>
                               </div>
                             </div>
 
@@ -480,31 +491,33 @@ export default function AdminDashboard() {
                               <div>
                                 <label className="text-xs text-gray-600 dark:text-gray-400">Materia</label>
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {teacher.subject}
+                                  {teacher.subject || '-'}
                                 </p>
                               </div>
                               <div>
                                 <label className="text-xs text-gray-600 dark:text-gray-400">Precio/hora</label>
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                  ${teacher.price_per_hour}
+                                  {teacher.price_per_hour != null ? `$${teacher.price_per_hour}` : 'No especificado'}
                                 </p>
                               </div>
                             </div>
 
                             <div className="mb-4">
                               <label className="text-xs text-gray-600 dark:text-gray-400">Biografía</label>
-                              <p className="text-sm text-gray-900 dark:text-white">{teacher.bio}</p>
+                              <p className="text-sm text-gray-900 dark:text-white">{teacher.bio || '-'}</p>
                             </div>
 
                             <div className="mb-4">
-                              <a
-                                href={teacher.certificate_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                              >
-                                📄 Ver Certificado/CV
-                              </a>
+                              {teacher.certificate_path && (
+                                <a
+                                  href={`${BACKEND_URL}/storage/${teacher.certificate_path}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm inline-flex items-center gap-2"
+                                >
+                                  📄 Ver Certificado/CV
+                                </a>
+                              )}
                             </div>
 
                             <p className="text-xs text-gray-500 dark:text-gray-500">

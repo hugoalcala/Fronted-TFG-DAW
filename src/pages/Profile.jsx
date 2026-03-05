@@ -8,19 +8,36 @@ export default function Profile() {
   const [showTeacherForm, setShowTeacherForm] = useState(false)
   const [loadingTeacher, setLoadingTeacher] = useState(false)
   const [teacherData, setTeacherData] = useState({
-    subject: '',
+    subjects: [], // Cambiado a array para múltiples materias
     bio: '',
     price_per_hour: '',
   })
   const [certificateFile, setCertificateFile] = useState(null)
 
-  const handleFileChange = (e) => {
+  // Lista de materias disponibles
+  const availableSubjects = [
+    'Matemáticas',
+    'Programación',
+    'Inglés',
+    'Historia',
+    'Ciencias',
+    'Diseño',
+    'Física',
+    'Química',
+    'Literatura',
+    'Arte'
+  ]
+
+  const handleFileChange = async (e) => {
     const file = e.target.files[0]
     if (file) {
-      // Validar tipo de archivo (PDF, imágenes)
-      const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
-      if (!validTypes.includes(file.type)) {
-        alert('Por favor sube un archivo PDF o imagen (JPG, PNG)')
+      // Validar tipo de archivo (solo PDF)
+      const validTypes = ['application/pdf']
+      const isValidType = validTypes.includes(file.type)
+      const isValidExtension = file.name.toLowerCase().endsWith('.pdf')
+      
+      if (!isValidType && !isValidExtension) {
+        alert('Por favor sube solo archivos PDF')
         return
       }
       
@@ -30,13 +47,45 @@ export default function Profile() {
         return
       }
       
+      // Validar contenido (firma de archivo PDF)
+      try {
+        const arrayBuffer = await file.slice(0, 5).arrayBuffer()
+        const header = new Uint8Array(arrayBuffer)
+        // PDF signature: %PDF- (0x25 0x50 0x44 0x46 0x2D)
+        const isPDFSignature = 
+          header[0] === 0x25 && // %
+          header[1] === 0x50 && // P
+          header[2] === 0x44 && // D
+          header[3] === 0x46 && // F
+          header[4] === 0x2D    // -
+        
+        if (!isPDFSignature) {
+          alert('El archivo no es un PDF válido. Por favor sube un archivo PDF real.')
+          return
+        }
+      } catch (error) {
+        console.error('Error validando archivo:', error)
+        alert('Error al validar el archivo. Por favor intenta de nuevo.')
+        return
+      }
+      
       setCertificateFile(file)
     }
   }
 
+  // Función para manejar la selección/deselección de materias
+  const handleSubjectToggle = (subject) => {
+    setTeacherData(prev => {
+      const subjects = prev.subjects.includes(subject)
+        ? prev.subjects.filter(s => s !== subject) // Remover si ya está
+        : [...prev.subjects, subject] // Agregar si no está
+      return { ...prev, subjects }
+    })
+  }
+
   const handleBecomeTeacher = async () => {
-    if (!teacherData.subject || !teacherData.bio) {
-      alert('Por favor completa los campos de materia y biografía')
+    if (!teacherData.subjects || teacherData.subjects.length === 0 || !teacherData.bio || teacherData.bio.trim().length === 0) {
+      alert('Por favor selecciona al menos una materia y escribe tu biografía')
       return
     }
 
@@ -58,12 +107,21 @@ export default function Profile() {
           alert('📋 Tu solicitud ha sido enviada. Será revisada por nuestro equipo.')
         }
         setShowTeacherForm(false)
-        setTeacherData({ subject: '', bio: '', price_per_hour: '' })
+        setTeacherData({ subjects: [], bio: '', price_per_hour: '' })
         setCertificateFile(null)
       }
     } catch (error) {
       console.error('Error becoming teacher:', error)
-      alert('Error al convertirse en profesor: ' + error.message)
+      
+      // Normalizar el mensaje de error para evitar errores con undefined
+      const msg = String(error?.message ?? error ?? '')
+      
+      // Verificar si es error 404 (endpoint no implementado)
+      if (msg.includes('404') || msg.includes('Not Found')) {
+        alert('⚠️ El sistema de solicitudes de profesores aún no está implementado en el backend.\n\nPor favor, implementa el endpoint POST /api/become-teacher en Laravel siguiendo las especificaciones proporcionadas.')
+      } else {
+        alert('Error al convertirse en profesor: ' + msg)
+      }
     } finally {
       setLoadingTeacher(false)
     }
@@ -88,9 +146,6 @@ export default function Profile() {
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
                   {user?.email}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                  ID: {user?.id}
                 </p>
               </div>
             </div>
@@ -217,26 +272,41 @@ export default function Profile() {
                       Información del Profesor
                     </h3>
 
-                    {/* Subject */}
+                    {/* Subjects - Multiple Selection */}
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                        Materia que enseñas *
+                        Materias que enseñas * (selecciona una o varias)
                       </label>
-                      <select
-                        value={teacherData.subject}
-                        onChange={(e) =>
-                          setTeacherData({ ...teacherData, subject: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
-                      >
-                        <option value="">Selecciona una materia</option>
-                        <option value="Matemáticas">Matemáticas</option>
-                        <option value="Programación">Programación</option>
-                        <option value="Inglés">Inglés</option>
-                        <option value="Historia">Historia</option>
-                        <option value="Ciencias">Ciencias</option>
-                        <option value="Diseño">Diseño</option>
-                      </select>
+                      <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        {availableSubjects.map((subject) => (
+                          <label
+                            key={subject}
+                            className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={teacherData.subjects.includes(subject)}
+                              onChange={() => handleSubjectToggle(subject)}
+                              className="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                            />
+                            <span className="text-sm text-gray-900 dark:text-white">
+                              {subject}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                      {teacherData.subjects.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {teacherData.subjects.map((subject) => (
+                            <span
+                              key={subject}
+                              className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
+                            >
+                              {subject}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Bio */}
@@ -281,14 +351,14 @@ export default function Profile() {
                         Título o Curriculum * 📄
                       </label>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                        Sube tu título universitario, certificado o CV para verificación (PDF, JPG, PNG - Máx 5MB)
+                        Sube tu título universitario, certificado o CV para verificación (Solo PDF - Máx 5MB)
                       </p>
                       
                       <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
                         <input
                           type="file"
                           id="certificate"
-                          accept=".pdf,.jpg,.jpeg,.png"
+                          accept=".pdf"
                           onChange={handleFileChange}
                           className="hidden"
                         />
@@ -303,7 +373,7 @@ export default function Profile() {
                                 Click para subir archivo
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-500">
-                                PDF, JPG, PNG (máx 5MB)
+                                Solo PDF (máx 5MB)
                               </p>
                             </>
                           ) : (
@@ -343,7 +413,7 @@ export default function Profile() {
                       <button
                         onClick={() => {
                           setShowTeacherForm(false)
-                          setTeacherData({ subject: '', bio: '', price_per_hour: '' })
+                          setTeacherData({ subjects: [], bio: '', price_per_hour: '' })
                           setCertificateFile(null)
                         }}
                         className="flex-1 px-6 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium"
