@@ -4,10 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../hooks/useTheme'
 import adminService from '../services/adminService'
 
-// URL base del backend (sin /api) para archivos estáticos
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
-const BACKEND_URL = API_BASE_URL.replace(/\/api\/?$/, '') // Remueve /api o /api/ del final
-
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -171,6 +167,15 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error al rechazar:', error)
       showNotification('Error al rechazar: ' + error.message, 'error')
+    }
+  }
+
+  const handleViewCertificate = async (teacherId) => {
+    try {
+      await adminService.viewCertificate(teacherId)
+    } catch (error) {
+      console.error('Error al ver certificado:', error)
+      showNotification('Error al cargar el certificado: ' + error.message, 'error')
     }
   }
 
@@ -509,14 +514,12 @@ export default function AdminDashboard() {
 
                             <div className="mb-4">
                               {teacher.certificate_path && (
-                                <a
-                                  href={`${BACKEND_URL}/storage/${teacher.certificate_path}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm inline-flex items-center gap-2"
+                                <button
+                                  onClick={() => handleViewCertificate(teacher.id)}
+                                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm inline-flex items-center gap-2 bg-transparent border-none cursor-pointer"
                                 >
                                   📄 Ver Certificado/CV
-                                </a>
+                                </button>
                               )}
                             </div>
 

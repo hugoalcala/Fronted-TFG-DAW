@@ -147,6 +147,51 @@ const adminService = {
   },
 
   /**
+   * Obtener y mostrar el certificado de una solicitud de profesor
+   * Descarga el PDF con autenticación y lo abre en una nueva pestaña
+   * 
+   * @param {number} teacherId - ID de la solicitud de profesor
+   */
+  async viewCertificate(teacherId) {
+    try {
+      const url = `${API_BASE_URL}/admin/teacher-request/${teacherId}/certificate`
+      console.log('🔍 Intentando cargar certificado desde:', url)
+      console.log('📋 Teacher ID:', teacherId)
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`
+        }
+      })
+
+      console.log('📡 Response status:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Error response:', errorText)
+        throw new Error(`Error ${response.status}: No se pudo cargar el certificado`)
+      }
+
+      // Obtener el blob del PDF
+      const blob = await response.blob()
+      console.log('✅ PDF cargado, tamaño:', blob.size, 'bytes')
+      
+      // Crear una URL temporal para el blob
+      const blobUrl = window.URL.createObjectURL(blob)
+      
+      // Abrir en nueva pestaña
+      window.open(blobUrl, '_blank')
+      
+      // Liberar la URL después de un tiempo
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100)
+    } catch (error) {
+      console.error('💥 Error al cargar certificado:', error)
+      throw error
+    }
+  },
+
+  /**
    * Obtener lista de todos los usuarios
    * GET /api/admin/users
    * 
