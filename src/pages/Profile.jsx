@@ -33,7 +33,10 @@ export default function Profile() {
     if (file) {
       // Validar tipo de archivo (solo PDF)
       const validTypes = ['application/pdf']
-      if (!validTypes.includes(file.type)) {
+      const isValidType = validTypes.includes(file.type)
+      const isValidExtension = file.name.toLowerCase().endsWith('.pdf')
+      
+      if (!isValidType && !isValidExtension) {
         alert('Por favor sube solo archivos PDF')
         return
       }

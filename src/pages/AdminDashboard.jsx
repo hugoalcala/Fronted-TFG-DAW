@@ -6,7 +6,7 @@ import adminService from '../services/adminService'
 
 // URL base del backend (sin /api) para archivos estáticos
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
-const BACKEND_URL = API_BASE_URL.replace(/\/api$/, '') // Remueve /api del final
+const BACKEND_URL = API_BASE_URL.replace(/\/api\/?$/, '') // Remueve /api o /api/ del final
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
