@@ -91,11 +91,14 @@ export default function Profile() {
     } catch (error) {
       console.error('Error becoming teacher:', error)
       
+      // Normalizar el mensaje de error para evitar errores con undefined
+      const msg = String(error?.message ?? error ?? '')
+      
       // Verificar si es error 404 (endpoint no implementado)
-      if (error.message.includes('404') || error.message.includes('Not Found')) {
+      if (msg.includes('404') || msg.includes('Not Found')) {
         alert('⚠️ El sistema de solicitudes de profesores aún no está implementado en el backend.\n\nPor favor, implementa el endpoint POST /api/become-teacher en Laravel siguiendo las especificaciones proporcionadas.')
       } else {
-        alert('Error al convertirse en profesor: ' + error.message)
+        alert('Error al convertirse en profesor: ' + msg)
       }
     } finally {
       setLoadingTeacher(false)
