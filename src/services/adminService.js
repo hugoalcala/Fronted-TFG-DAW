@@ -84,7 +84,8 @@ const adminService = {
 
       const data = await response.json()
       console.log('✅ Pending teachers recibidos:', data)
-      return data
+      // El backend devuelve { data: [...] }
+      return data.data || data
     } catch (error) {
       console.error('💥 Error en getPendingTeachers:', error)
       // Si el endpoint no existe, devolver array vacío
@@ -126,8 +127,11 @@ const adminService = {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/reject-teacher/${teacherId}`, {
         method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ reason })
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ admin_notes: reason })
       })
 
       if (!response.ok) {

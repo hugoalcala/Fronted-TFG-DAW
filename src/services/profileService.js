@@ -202,7 +202,12 @@ export const profileService = {
   async becomeTeacher(teacherData = {}, certificateFile = null) {
     try {
       const formData = new FormData()
-      formData.append('subject', teacherData.subject)
+      
+      // Enviar materias como string separado por comas (compatible con backend)
+      if (teacherData.subjects && Array.isArray(teacherData.subjects) && teacherData.subjects.length > 0) {
+        formData.append('subject', teacherData.subjects.join(', '))
+      }
+      
       formData.append('bio', teacherData.bio)
       
       if (teacherData.price_per_hour) {
@@ -226,8 +231,18 @@ export const profileService = {
       )
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to become teacher')
+        // Si es 404, el endpoint no existe
+        if (response.status === 404) {
+          throw new Error('404 - Endpoint /api/become-teacher no implementado en el backend')
+        }
+        
+        // Intentar parsear el error como JSON
+        try {
+          const errorData = await response.json()
+          throw new Error(errorData.message || 'Failed to become teacher')
+        } catch (jsonError) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`)
+        }
       }
 
       const data = await response.json()
