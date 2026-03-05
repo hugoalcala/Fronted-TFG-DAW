@@ -28,7 +28,7 @@ export default function Profile() {
     'Arte'
   ]
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0]
     if (file) {
       // Validar tipo de archivo (solo PDF)
@@ -44,6 +44,28 @@ export default function Profile() {
       // Validar tamaño (máximo 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert('El archivo es muy grande. Máximo 5MB')
+        return
+      }
+      
+      // Validar contenido (firma de archivo PDF)
+      try {
+        const arrayBuffer = await file.slice(0, 5).arrayBuffer()
+        const header = new Uint8Array(arrayBuffer)
+        // PDF signature: %PDF- (0x25 0x50 0x44 0x46 0x2D)
+        const isPDFSignature = 
+          header[0] === 0x25 && // %
+          header[1] === 0x50 && // P
+          header[2] === 0x44 && // D
+          header[3] === 0x46 && // F
+          header[4] === 0x2D    // -
+        
+        if (!isPDFSignature) {
+          alert('El archivo no es un PDF válido. Por favor sube un archivo PDF real.')
+          return
+        }
+      } catch (error) {
+        console.error('Error validando archivo:', error)
+        alert('Error al validar el archivo. Por favor intenta de nuevo.')
         return
       }
       
