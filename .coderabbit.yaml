@@ -1,0 +1,63 @@
+# Configuración de CodeRabbit para eduConnect Frontend
+# https://docs.coderabbit.ai/guides/configure-coderabbit
+
+# Habilitar revisiones automáticas
+reviews:
+  # Mostrar estado de revisión en PRs
+  review_status: true
+  
+  # Configuración de revisión automática
+  auto_review:
+    enabled: true
+    
+    # Ramas base que deben ser revisadas automáticamente
+    base_branches:
+      - main
+      - dev  # Rama principal de desarrollo
+    
+    # Drafts también serán revisados
+    drafts: true
+  
+  # Configuración de solicitud de cambios
+  request_changes_workflow: false
+  
+  # Límite de revisar archivos grandes (en líneas)
+  max_files: 100
+
+# Configuración de comentarios
+chat:
+  # Habilitar autorespuestas
+  auto_reply: true
+
+# Lenguajes a revisar
+language: es
+
+# Configuración de análisis
+analysis:
+  # Nivel de profundidad del análisis
+  level: comprehensive
+  
+  # Tipos de problemas a detectar
+  check_for:
+    - bugs
+    - security_issues
+    - performance_issues
+    - code_smells
+    - best_practices
+    - accessibility
+
+# Configuración de notificaciones
+notifications:
+  # Notificar solo sobre issues críticos
+  level: all
+
+# Pathspecs - Archivos a incluir/excluir
+path_filters:
+  # Excluir archivos generados o de configuración
+  exclude:
+    - "**/*.min.js"
+    - "dist/**"
+    - "build/**"
+    - "node_modules/**"
+    - "package-lock.json"
+    - "*.log"
