@@ -26,6 +26,7 @@ export default function TeacherProfile() {
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewError, setReviewError] = useState(null)
   const [reviewSuccess, setReviewSuccess] = useState(false)
+  const reviewSuccessTimerRef = useRef(null)
 
   // Cargar datos del profesor
   useEffect(() => {
@@ -106,6 +107,15 @@ export default function TeacherProfile() {
     loadTeacherData()
   }, [teacherId])
 
+  // Limpiar timer al desmontar
+  useEffect(() => {
+    return () => {
+      if (reviewSuccessTimerRef.current) {
+        clearTimeout(reviewSuccessTimerRef.current)
+      }
+    }
+  }, [])
+
   const normalizeTeacher = (teacher) => {
     const userNode = teacher?.user || teacher
     return {
@@ -133,7 +143,6 @@ export default function TeacherProfile() {
           onClick={() => setStudentRating(i)}
           aria-label={`${i} ${i === 1 ? 'estrella' : 'estrellas'}`}
           aria-pressed={i === rating}
-          aria-current={i === rating ? 'true' : undefined}
           className={`text-2xl transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400 rounded ${
             i <= rating ? 'text-yellow-400' : 'text-gray-300'
           }`}
@@ -174,7 +183,12 @@ export default function TeacherProfile() {
       setStudentRating(5)
       setShowReviewForm(false)
 
-      setTimeout(() => setReviewSuccess(false), 3000)
+      // Limpiar timeout anterior si existe
+      if (reviewSuccessTimerRef.current) {
+        clearTimeout(reviewSuccessTimerRef.current)
+      }
+      // Crear nuevo timeout y guardar su ID
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccess(false), 3000)
     } catch (err) {
       console.error('Error creating review:', err)
       setReviewError(err.message || 'Error al enviar la reseña')

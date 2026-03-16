@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
 import { messagesService } from '../services/messagesService'
-import { useAuth } from '../context/AuthContext'
 
 export default function Messages() {
   const [searchParams] = useSearchParams()
@@ -60,14 +59,16 @@ export default function Messages() {
           }
         }
 
-        // Si viene conversation, seleccionar esa
-        const conversationId = searchParams.get('conversation')
-        if (conversationId) {
-          const foundConversation = Array.isArray(data)
-            ? data.find((conv) => conv.id === parseInt(conversationId))
-            : null
-          if (foundConversation) {
-            setSelectedChat(foundConversation)
+        // Si viene conversation, seleccionar esa (solo si newChat no fue manejado)
+        else if (!newChatId) {
+          const conversationId = searchParams.get('conversation')
+          if (conversationId) {
+            const foundConversation = Array.isArray(data)
+              ? data.find((conv) => conv.id === parseInt(conversationId))
+              : null
+            if (foundConversation && currentRequestId === requestIdRef.current) {
+              setSelectedChat(foundConversation)
+            }
           }
         }
       } catch (err) {
@@ -93,6 +94,7 @@ export default function Messages() {
     setSendingMessage(true)
     const targetChatId = selectedChat.id
     const messageText = newMessage.trim()
+    setError(null)
     
     try {
       await messagesService.sendMessage(targetChatId, messageText)
@@ -271,7 +273,12 @@ export default function Messages() {
                   placeholder="Escribe un mensaje..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !sendingMessage && (e.preventDefault(), handleSendMessage())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !sendingMessage) {
+                      e.preventDefault()
+                      handleSendMessage()
+                    }
+                  }}
                   disabled={sendingMessage}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50"
                 />
