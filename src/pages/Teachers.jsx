@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
 import { teachersService } from '../services/teachersService'
 import { useAuth } from '../context/AuthContext'
@@ -10,6 +11,7 @@ const getFiltersCacheKey = (searchTerm) =>
 
 export default function Teachers() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterSubject, setFilterSubject] = useState('todas')
   const [teachers, setTeachers] = useState([])
@@ -129,10 +131,8 @@ export default function Teachers() {
     return matchesSearch && matchesSubject
   })
 
-  const handleContactTeacher = async (teacherId) => {
-    console.log('Contactando a profesor:', teacherId)
-    // TODO: Implementar modal para enviar mensaje de contacto
-    alert('Función de contacto próximamente')
+  const handleContactTeacher = (teacherId) => {
+    navigate(`/teachers/${teacherId}`)
   }
 
   return (
@@ -256,7 +256,7 @@ export default function Teachers() {
                     onClick={() => handleContactTeacher(teacher.id)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
-                    Contactar
+                    Ver perfil
                   </button>
                 </div>
               </div>

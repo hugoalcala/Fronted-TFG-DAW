@@ -11,6 +11,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import Teachers from './pages/Teachers'
+import TeacherProfile from './pages/TeacherProfile'
 import Messages from './pages/Messages'
 import AdminDashboard from './pages/AdminDashboard'
 
@@ -165,6 +166,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Teachers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/teachers/:id"
+                element={
+                  <ProtectedRoute>
+                    <TeacherProfile />
                   </ProtectedRoute>
                 }
               />
