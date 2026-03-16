@@ -114,6 +114,8 @@ export default function PomodoroTimer({ onSessionComplete }) {
       setIsBreak(false)
       setSeconds(WORK_TIME)
     } else {
+      // Contar como completada cuando se salta una sesión de trabajo
+      setSessionsCompleted((prev) => prev + 1)
       setIsBreak(true)
       setSeconds(BREAK_TIME)
     }
