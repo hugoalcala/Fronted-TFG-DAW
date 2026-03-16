@@ -199,6 +199,15 @@ export default function Profile() {
       reader.onloadend = () => {
         setAvatarPreview(reader.result)
       }
+      reader.onerror = () => {
+        setAvatarFile(null)
+        setAvatarPreview(null)
+        alert('No se pudo leer la imagen seleccionada. Intenta con otro archivo.')
+      }
+      reader.onabort = () => {
+        setAvatarFile(null)
+        setAvatarPreview(null)
+      }
       reader.readAsDataURL(file)
     }
   }
@@ -243,8 +252,19 @@ export default function Profile() {
 
       // Solo incluir precio si el usuario es profesor
       if (user?.role === 'teacher') {
-        const isEmptyPrice = editData.price_per_hour === '' || editData.price_per_hour === null || editData.price_per_hour === undefined
-        updatePayload.price_per_hour = isEmptyPrice ? null : Number(editData.price_per_hour)
+        const rawPrice = editData.price_per_hour
+        const isEmptyPrice = rawPrice === '' || rawPrice === null || rawPrice === undefined
+
+        if (isEmptyPrice) {
+          updatePayload.price_per_hour = null
+        } else {
+          const parsedPrice = Number(rawPrice)
+          if (!Number.isFinite(parsedPrice)) {
+            alert('El precio por hora debe ser un número válido')
+            return
+          }
+          updatePayload.price_per_hour = parsedPrice
+        }
       }
 
       failedStep = 'actualizar los datos del perfil'
