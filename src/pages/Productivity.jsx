@@ -165,25 +165,6 @@ export default function Productivity() {
             </div>
           )}
         </div>
-
-        {/* Footer con info */}
-        <div className="mt-12 p-6 bg-indigo-50 dark:bg-indigo-900 rounded-lg border border-indigo-200 dark:border-indigo-800">
-          <h3 className="font-bold text-indigo-900 dark:text-indigo-100 mb-2">
-            🌟 ¿Cómo funciona el Centro de Productividad?
-          </h3>
-          <ul className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-indigo-800 dark:text-indigo-200">
-            <li>
-              <strong>1. Organiza:</strong> Crea tareas con categorías (trabajo, estudio, personal, etc)
-            </li>
-            <li>
-              <strong>2. Enfócate:</strong> Usa Pomodoro (25min trabajo + 5min descanso) para mantener
-              productividad
-            </li>
-            <li>
-              <strong>3. Analiza:</strong> Revisa tus métricas para ver cómo vas mejorando con el tiempo
-            </li>
-          </ul>
-        </div>
       </div>
     </AuthLayout>
   )
