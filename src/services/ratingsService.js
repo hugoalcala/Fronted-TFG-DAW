@@ -23,7 +23,7 @@ export const ratingsService = {
       return data.data || data
     } catch (error) {
       console.error('❌ Error fetching ratings:', error)
-      return { ratings: [], average: null, total_count: 0 }
+      throw error
     }
   },
 

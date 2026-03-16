@@ -22,11 +22,29 @@ export default function Messages() {
         const data = await messagesService.getConversations()
         setConversations(Array.isArray(data) ? data : [])
 
-        // Si viene un parámetro newChat, auto-seleccionar esa conversación
+        // Si viene un parámetro newChat, crear o encontrar conversación con ese usuario
         const newChatId = searchParams.get('newChat')
         if (newChatId) {
-          // TODO: Buscar conversación existente o crear una nueva
-          console.log('Iniciando chat con profesor:', newChatId)
+          console.log('📍 Iniciando chat con profesor:', newChatId)
+          const conversationsArray = Array.isArray(data) ? data : []
+          const existingConv = conversationsArray.find(
+            (conv) => String(conv.recipient_id) === String(newChatId) || String(conv.user_id) === String(newChatId)
+          )
+          
+          if (existingConv) {
+            console.log('✅ Conversación existente encontrada')
+            setSelectedChat(existingConv)
+          } else {
+            console.log('🆕 Creando nueva conversación')
+            try {
+              const newConversation = await messagesService.createConversation(newChatId)
+              const created = newConversation.data || newConversation
+              setSelectedChat(created)
+              setConversations((prev) => [...prev, created])
+            } catch (err) {
+              console.error('❌ Error creating conversation:', err)
+            }
+          }
         }
 
         // Si viene conversation, seleccionar esa
@@ -55,12 +73,23 @@ export default function Messages() {
 
     setSendingMessage(true)
     try {
-      // TODO: Enviar mensaje al backend
-      await messagesService.sendMessage(selectedChat.id, {
-        message: newMessage.trim(),
-      })
-      console.log('Mensaje enviado')
+      await messagesService.sendMessage(selectedChat.id, newMessage.trim())
+      console.log('✅ Mensaje enviado')
       setNewMessage('')
+      // Actualizar el chat localmente con el nuevo mensaje
+      setSelectedChat((prev) => ({
+        ...prev,
+        lastMessage: newMessage.trim(),
+        messages: [
+          ...(prev.messages || []),
+          {
+            id: Date.now(),
+            sender: 'Tú',
+            text: newMessage.trim(),
+            time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          },
+        ],
+      }))
     } catch (err) {
       console.error('Error sending message:', err)
       setError('Error al enviar el mensaje')
@@ -82,33 +111,8 @@ export default function Messages() {
     )
   }
 
-  // Mock data para cuando no hay datos del backend
-  const chats = conversations.length > 0
-    ? conversations
-    : [
-        {
-          id: 1,
-          name: 'Dr. Juan García',
-          lastMessage: 'Vale, nos vemos mañana a las 3pm',
-          timestamp: 'hace 2 horas',
-          unread: 2,
-          avatar: '👨‍🏫',
-          messages: [
-            { id: 1, sender: 'Dr. Juan García', text: 'Hola, ¿cómo estás?', time: '10:30' },
-            { id: 2, sender: 'Tú', text: 'Bien, ¿y tú?', time: '10:32' },
-            { id: 3, sender: 'Dr. Juan García', text: 'Vale, nos vemos mañana a las 3pm', time: '10:35' },
-          ]
-        },
-        {
-          id: 2,
-          name: 'Ing. María López',
-          lastMessage: 'El proyecto está listo para revisar',
-          timestamp: 'hace 1 hora',
-          unread: 0,
-          avatar: '👩‍💼',
-          messages: []
-        },
-      ]
+  // Usar conversaciones reales del backend
+  const chats = conversations
 
   return (
     <AuthLayout>
@@ -128,7 +132,7 @@ export default function Messages() {
           )}
 
           <div className="flex-1 overflow-y-auto">
-            {chats.length > 0 ? (
+            {chats && chats.length > 0 ? (
               chats.map((chat) => (
                 <button
                   key={chat.id}
@@ -163,8 +167,10 @@ export default function Messages() {
                 </button>
               ))
             ) : (
-              <div className="p-6 text-center text-gray-600 dark:text-gray-400">
-                No tienes conversaciones aún
+              <div className="p-6 text-center">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  {loading ? 'Cargando conversaciones...' : 'No tienes conversaciones aún'}
+                </p>
               </div>
             )}
           </div>

@@ -24,7 +24,7 @@ export default function Teachers() {
   const normalizeTeacher = (teacher) => {
     const userNode = teacher?.user || teacher
     return {
-      id: teacher?.id ?? userNode?.id ?? crypto.randomUUID(),
+      id: teacher?.id ?? userNode?.id,
       name: teacher?.name ?? userNode?.name ?? '',
       subject: teacher?.subject ?? teacher?.specialty ?? userNode?.subject ?? '',
       rating: teacher?.rating ?? userNode?.rating ?? null,

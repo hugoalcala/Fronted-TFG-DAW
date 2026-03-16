@@ -10,6 +10,7 @@ export default function TeacherProfile() {
   const { id: teacherId } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const requestIdRef = useRef(0)
 
   const [teacher, setTeacher] = useState(null)
   const [ratings, setRatings] = useState([])
@@ -29,6 +30,8 @@ export default function TeacherProfile() {
   // Cargar datos del profesor
   useEffect(() => {
     const loadTeacherData = async () => {
+      const currentRequestId = ++requestIdRef.current
+
       try {
         setLoading(true)
         console.log('📍 Loading teacher profile for ID:', teacherId)
@@ -38,10 +41,14 @@ export default function TeacherProfile() {
 
         // Intenta obtener datos directamente del endpoint /teachers/:id
         try {
-          [teacherData, ratingsData] = await Promise.all([
-            ratingsService.getTeacherDetails(teacherId),
-            ratingsService.getTeacherRatings(teacherId),
-          ])
+          teacherData = await ratingsService.getTeacherDetails(teacherId)
+          // Obtener ratings pero no fallar si no se puede
+          try {
+            ratingsData = await ratingsService.getTeacherRatings(teacherId)
+          } catch (ratingsErr) {
+            console.warn('⚠️ Could not load ratings:', ratingsErr.message)
+            ratingsData = { ratings: [], average: null, total_count: 0 }
+          }
         } catch (err) {
           console.warn('⚠️ getTeacherDetails failed, trying alternative:', err.message)
           
@@ -58,11 +65,20 @@ export default function TeacherProfile() {
           }
 
           // Intentar cargar ratings de todas formas
-          try {
-            ratingsData = await ratingsService.getTeacherRatings(teacherId)
-          } catch (err2) {
-            console.warn('⚠️ Could not load ratings:', err2.message)
+          if (!ratingsData) {
+            try {
+              ratingsData = await ratingsService.getTeacherRatings(teacherId)
+            } catch (err2) {
+              console.warn('⚠️ Could not load ratings:', err2.message)
+              ratingsData = { ratings: [], average: null, total_count: 0 }
+            }
           }
+        }
+
+        // Proteger contra respuestas obsoletas
+        if (currentRequestId !== requestIdRef.current) {
+          console.warn('⚠️ Newer request already in progress, ignoring stale response')
+          return
         }
 
         if (!teacherData) {
@@ -76,9 +92,13 @@ export default function TeacherProfile() {
         setTotalReviews(ratingsData?.total_count || 0)
       } catch (err) {
         console.error('❌ Error loading teacher:', err)
-        setError(err.message || 'No se pudo cargar el perfil del profesor')
+        if (currentRequestId === requestIdRef.current) {
+          setError(err.message || 'No se pudo cargar el perfil del profesor')
+        }
       } finally {
-        setLoading(false)
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false)
+        }
       }
     }
 
@@ -106,15 +126,18 @@ export default function TeacherProfile() {
     const stars = []
     for (let i = 1; i <= 5; i++) {
       stars.push(
-        <span
+        <button
           key={i}
-          className={`text-2xl cursor-pointer transition-colors ${
+          type="button"
+          onClick={() => setStudentRating(i)}
+          aria-label={`${i} ${i === 1 ? 'estrella' : 'estrellas'}`}
+          aria-pressed={i === rating}
+          className={`text-2xl transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400 rounded ${
             i <= rating ? 'text-yellow-400' : 'text-gray-300'
           }`}
-          onClick={() => setStudentRating(i)}
         >
           ★
-        </span>
+        </button>
       )
     }
     return stars
