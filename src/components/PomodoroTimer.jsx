@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { productivityService } from '../services/productivityService'
 
 export default function PomodoroTimer({ onSessionComplete }) {
+  const [customWorkTime, setCustomWorkTime] = useState(25) // Tiempo de trabajo en minutos
   const [seconds, setSeconds] = useState(25 * 60) // 25 minutos inicial
   const [isActive, setIsActive] = useState(false)
   const [isBreak, setIsBreak] = useState(false)
@@ -11,7 +12,7 @@ export default function PomodoroTimer({ onSessionComplete }) {
   const [loading, setLoading] = useState(false)
   const audioRef = useRef(null)
 
-  const WORK_TIME = 25 * 60
+  const WORK_TIME = customWorkTime * 60
   const BREAK_TIME = 5 * 60
 
   useEffect(() => {
@@ -99,6 +100,14 @@ export default function PomodoroTimer({ onSessionComplete }) {
     setSeconds(isBreak ? BREAK_TIME : WORK_TIME)
   }
 
+  const updateWorkTime = (newTime) => {
+    const minutes = Math.max(1, Math.min(60, newTime)) // Entre 1 y 60 minutos
+    setCustomWorkTime(minutes)
+    if (!isActive && !isBreak) {
+      setSeconds(minutes * 60)
+    }
+  }
+
   const skipSession = () => {
     setIsActive(false)
     if (isBreak) {
@@ -174,6 +183,26 @@ export default function PomodoroTimer({ onSessionComplete }) {
         </p>
       </div>
 
+      {/* Tiempo personalizado de concentración */}
+      <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          ⏱️ Tiempo de concentración (minutos):
+        </label>
+        <div className="flex gap-2 items-center">
+          <input
+            type="number"
+            min="1"
+            max="60"
+            value={customWorkTime}
+            onChange={(e) => updateWorkTime(parseInt(e.target.value) || 1)}
+            disabled={isActive}
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          />
+          <span className="text-sm text-gray-600 dark:text-gray-400">min</span>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">El descanso será de 5 minutos</p>
+      </div>
+
       {/* Tarea seleccionada */}
       <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -226,9 +255,9 @@ export default function PomodoroTimer({ onSessionComplete }) {
       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg text-sm text-gray-700 dark:text-gray-300">
         <p className="font-semibold mb-2">💡 Técnica Pomodoro:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>25 minutos de enfoque intenso</li>
-          <li>5 minutos de descanso</li>
-          <li>Después de 4 ciclos, descanso mayor</li>
+          <li>Elige tu tiempo de concentración (1-60 minutos)</li>
+          <li>5 minutos de descanso automático</li>
+          <li>Después de 4 ciclos, descanso mayor recomendado</li>
         </ul>
       </div>
     </div>
