@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../context/AuthContext'
+import logo from '../assets/educonnect_logo.png'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -21,9 +22,13 @@ export default function Navbar() {
           {/* Logo */}
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-2xl font-bold text-blue-900 dark:text-blue-400 hover:opacity-80 transition-opacity flex-shrink-0"
+            className="hover:opacity-80 transition-opacity flex-shrink-0"
           >
-            🎓 EduConnect
+            <img
+              src={logo}
+              alt="EduConnect"
+              className="h-10 w-auto"
+            />
           </button>
 
           {/* Espacio flexible */}
