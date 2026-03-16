@@ -1,7 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import AuthLayout from '../layouts/AuthLayout'
 import { teachersService } from '../services/teachersService'
 import { useAuth } from '../context/AuthContext'
+
+const teachersCache = new Map()
+
+const getFiltersCacheKey = (searchTerm) =>
+  JSON.stringify({ search: (searchTerm ?? '').trim().toLowerCase() })
 
 export default function Teachers() {
   const { user } = useAuth()
@@ -9,7 +14,10 @@ export default function Teachers() {
   const [filterSubject, setFilterSubject] = useState('todas')
   const [teachers, setTeachers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState(null)
+  const hasLoadedOnceRef = useRef(false)
+  const requestIdRef = useRef(0)
 
   const normalizeTeacher = (teacher) => {
     const userNode = teacher?.user || teacher
@@ -27,32 +35,63 @@ export default function Teachers() {
     }
   }
 
+  const normalizeText = (value) =>
+    String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+
   // Obtener profesores del backend
   useEffect(() => {
     const fetchTeachers = async () => {
+      const currentRequestId = ++requestIdRef.current
       try {
-        setLoading(true)
+        const cacheKey = getFiltersCacheKey(searchTerm)
+        const cachedTeachers = teachersCache.get(cacheKey)
+
+        if (cachedTeachers && Array.isArray(cachedTeachers)) {
+          setTeachers(cachedTeachers)
+          setLoading(false)
+          hasLoadedOnceRef.current = true
+          setIsRefreshing(true)
+        } else if (!hasLoadedOnceRef.current) {
+          setLoading(true)
+        } else {
+          setIsRefreshing(true)
+        }
         setError(null)
         
         const filters = {}
-        if (filterSubject !== 'todas') {
-          filters.subject = filterSubject
-        }
+        // La asignatura se filtra en cliente para soportar valores múltiples
+        // como "Matemáticas, Inglés" sin depender de matching exacto en backend.
         if (searchTerm) {
           filters.search = searchTerm
         }
 
         const data = await teachersService.getTeachers(filters)
 
+        if (currentRequestId !== requestIdRef.current) {
+          return
+        }
+
         // Mostrar solo datos reales del backend (normalizados en el service).
         const normalizedTeachers = (Array.isArray(data) ? data : []).map(normalizeTeacher)
         setTeachers(normalizedTeachers)
+        teachersCache.set(cacheKey, normalizedTeachers)
+        hasLoadedOnceRef.current = true
       } catch (error) {
+        if (currentRequestId !== requestIdRef.current) {
+          return
+        }
         console.error('Error fetching teachers:', error)
         setTeachers([])
         setError(error.message || 'No se pudieron cargar los profesores. Inténtalo de nuevo en unos segundos.')
       } finally {
-        setLoading(false)
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false)
+          setIsRefreshing(false)
+        }
       }
     }
 
@@ -69,9 +108,24 @@ export default function Teachers() {
     const teacherName = teacher?.name ?? ''
     const teacherBio = teacher?.bio ?? ''
     const teacherSubject = teacher?.subject ?? ''
-    const matchesSearch = teacherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         teacherBio.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesSubject = filterSubject === 'todas' || teacherSubject === filterSubject
+    const normalizedSearchTerm = normalizeText(searchTerm)
+    const normalizedFilterSubject = normalizeText(filterSubject)
+
+    const matchesSearch =
+      normalizeText(teacherName).includes(normalizedSearchTerm) ||
+      normalizeText(teacherBio).includes(normalizedSearchTerm) ||
+      normalizeText(teacherSubject).includes(normalizedSearchTerm)
+
+    const teacherSubjects = Array.isArray(teacherSubject)
+      ? teacherSubject.map((item) => normalizeText(item))
+      : String(teacherSubject)
+          .split(',')
+          .map((item) => normalizeText(item))
+          .filter(Boolean)
+
+    const matchesSubject =
+      filterSubject === 'todas' || teacherSubjects.includes(normalizedFilterSubject)
+
     return matchesSearch && matchesSubject
   })
 
@@ -132,8 +186,13 @@ export default function Teachers() {
         </div>
 
         {/* Teachers Grid */}
+        {isRefreshing && teachers.length > 0 && (
+          <div className="mb-4 text-sm text-blue-600 dark:text-blue-400">
+            Actualizando profesores...
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading ? (
+          {loading && teachers.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 dark:border-blue-400 mx-auto mb-4"></div>
               <p className="text-gray-600 dark:text-gray-400">Cargando profesores...</p>
