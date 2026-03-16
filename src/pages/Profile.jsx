@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import AuthLayout from '../layouts/AuthLayout'
 import { profileService } from '../services/profileService'
@@ -25,6 +25,9 @@ export default function Profile() {
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [removeAvatar, setRemoveAvatar] = useState(false)
+  const modalRef = useRef(null)
+  const firstInputRef = useRef(null)
+  const previousFocusedElementRef = useRef(null)
 
   // Lista de materias disponibles
   const availableSubjects = [
@@ -97,15 +100,80 @@ export default function Profile() {
 
   const handleOpenEditModal = () => {
     setEditData({
-      name: user?.name || '',
-      email: user?.email || '',
-      price_per_hour: user?.price_per_hour || '',
+      name: user?.name ?? '',
+      email: user?.email ?? '',
+      price_per_hour: user?.price_per_hour ?? '',
     })
     setAvatarFile(null)
     setAvatarPreview(null)
     setRemoveAvatar(false)
     setShowEditModal(true)
   }
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false)
+    setAvatarFile(null)
+    setAvatarPreview(null)
+    setRemoveAvatar(false)
+  }
+
+  useEffect(() => {
+    if (!showEditModal) {
+      return undefined
+    }
+
+    previousFocusedElementRef.current = document.activeElement
+
+    const focusTimer = setTimeout(() => {
+      firstInputRef.current?.focus()
+    }, 0)
+
+    const handleModalKeydown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        handleCloseEditModal()
+        return
+      }
+
+      if (event.key !== 'Tab' || !modalRef.current) {
+        return
+      }
+
+      const focusableElements = modalRef.current.querySelectorAll(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+
+      if (!focusableElements.length) {
+        event.preventDefault()
+        return
+      }
+
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements[focusableElements.length - 1]
+      const activeElement = document.activeElement
+
+      if (event.shiftKey) {
+        if (activeElement === firstElement || !modalRef.current.contains(activeElement)) {
+          event.preventDefault()
+          lastElement.focus()
+        }
+        return
+      }
+
+      if (activeElement === lastElement) {
+        event.preventDefault()
+        firstElement.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleModalKeydown)
+
+    return () => {
+      clearTimeout(focusTimer)
+      document.removeEventListener('keydown', handleModalKeydown)
+      previousFocusedElementRef.current?.focus?.()
+    }
+  }, [showEditModal])
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0]
@@ -141,24 +209,31 @@ export default function Profile() {
       return
     }
 
+    const previousUser = user
+    const refreshCanonicalUser = async () => {
+      const refreshedProfile = await profileService.getProfile()
+      const refreshedUser = refreshedProfile?.user ?? refreshedProfile
+      if (refreshedUser) {
+        setUser(refreshedUser)
+      }
+    }
+
     try {
       setLoadingEdit(true)
+      let failedStep = 'guardar los cambios del perfil'
 
       // Si el usuario eligió quitar su foto, restaurar avatar predeterminado
       if (removeAvatar) {
-        const removeResult = await profileService.removeAvatar()
-        if (removeResult?.data?.user) {
-          setUser(removeResult.data.user)
-        }
+        failedStep = 'eliminar el avatar actual'
+        await profileService.removeAvatar()
+        await refreshCanonicalUser()
       }
       
       // Primero actualizar el avatar si hay uno nuevo
       if (avatarFile) {
-        const avatarResult = await profileService.updateAvatar(avatarFile)
-        // Actualizar el usuario con la nueva foto
-        if (avatarResult.data?.user) {
-          setUser(avatarResult.data.user)
-        }
+        failedStep = 'subir la nueva imagen de perfil'
+        await profileService.updateAvatar(avatarFile)
+        await refreshCanonicalUser()
       }
       
       // Luego actualizar los datos del perfil (sin email)
@@ -168,38 +243,30 @@ export default function Profile() {
 
       // Solo incluir precio si el usuario es profesor
       if (user?.role === 'teacher') {
-        updatePayload.price_per_hour = editData.price_per_hour || null
+        const isEmptyPrice = editData.price_per_hour === '' || editData.price_per_hour === null || editData.price_per_hour === undefined
+        updatePayload.price_per_hour = isEmptyPrice ? null : Number(editData.price_per_hour)
       }
 
-      const result = await profileService.updateProfile(updatePayload)
+      failedStep = 'actualizar los datos del perfil'
+      await profileService.updateProfile(updatePayload)
+      await refreshCanonicalUser()
 
-      // Actualizar el usuario en el contexto; si el backend no lo devuelve,
-      // refrescar el perfil para mantener la UI sincronizada.
-      if (result?.data?.user) {
-        setUser(result.data.user)
-      } else {
-        try {
-          const refreshedProfile = await profileService.getProfile()
-          const refreshedUser = refreshedProfile?.user || refreshedProfile
-          if (refreshedUser) {
-            setUser(refreshedUser)
-          }
-        } catch (refreshError) {
-          console.warn('No se pudo refrescar el perfil tras guardar:', refreshError)
+      alert('✅ Perfil actualizado exitosamente')
+      handleCloseEditModal()
+    } catch (error) {
+      console.error('Error updating profile:', error)
+
+      // Evitar UI inconsistente: intentar reflejar estado real del backend.
+      try {
+        await refreshCanonicalUser()
+      } catch (refreshError) {
+        console.warn('No se pudo refrescar el estado canónico tras error:', refreshError)
+        if (previousUser) {
+          setUser(previousUser)
         }
       }
 
-      alert('✅ Perfil actualizado exitosamente')
-      setShowEditModal(false)
-      setAvatarFile(null)
-      setAvatarPreview(null)
-      setRemoveAvatar(false)
-
-      // Recargar para reflejar inmediatamente el avatar actualizado/predeterminado.
-      window.location.reload()
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      alert('Error al actualizar el perfil: ' + (error.message || 'Error desconocido'))
+      alert(`Error al ${failedStep}: ${error.message || 'Error desconocido'}`)
     } finally {
       setLoadingEdit(false)
     }
@@ -335,7 +402,9 @@ export default function Profile() {
                 <div>
                   <label className="text-sm text-gray-600 dark:text-gray-400">Precio por hora</label>
                   <p className="text-gray-900 dark:text-white font-medium">
-                    {user?.price_per_hour ? `$${user.price_per_hour}/hora` : 'No especificado'}
+                    {user?.price_per_hour !== null && user?.price_per_hour !== undefined && user?.price_per_hour !== ''
+                      ? `$${user.price_per_hour}/hora`
+                      : 'No especificado'}
                   </p>
                 </div>
               )}
@@ -391,8 +460,14 @@ export default function Profile() {
         {/* Modal de Edición de Perfil */}
         {showEditModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-800">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            <div
+              ref={modalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-profile-title"
+              className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-800"
+            >
+              <h2 id="edit-profile-title" className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                 Editar Perfil
               </h2>
 
@@ -403,6 +478,7 @@ export default function Profile() {
                     Nombre *
                   </label>
                   <input
+                    ref={firstInputRef}
                     type="text"
                     value={editData.name}
                     onChange={(e) => setEditData({ ...editData, name: e.target.value })}
@@ -556,7 +632,7 @@ export default function Profile() {
                   {loadingEdit ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
                 <button
-                  onClick={() => setShowEditModal(false)}
+                  onClick={handleCloseEditModal}
                   disabled={loadingEdit}
                   className="flex-1 px-6 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
                 >
