@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { teachersService } from '../services/teachersService'
 import { ratingsService } from '../services/ratingsService'
 import { messagesService } from '../services/messagesService'
+import { normalizeTeacher } from '../utils/teacherUtils'
 
 export default function TeacherProfile() {
   const { id: teacherId } = useParams()
@@ -116,23 +117,6 @@ export default function TeacherProfile() {
     }
   }, [])
 
-  const normalizeTeacher = (teacher) => {
-    const userNode = teacher?.user || teacher
-    return {
-      id: teacher?.id ?? userNode?.id,
-      name: teacher?.name ?? userNode?.name ?? '',
-      subject: teacher?.subject ?? teacher?.specialty ?? userNode?.subject ?? '',
-      rating: teacher?.rating ?? userNode?.rating ?? null,
-      students_count: teacher?.students_count ?? teacher?.students ?? userNode?.students_count ?? 0,
-      avatar_url: teacher?.avatar_url ?? userNode?.avatar_url ?? null,
-      bio: teacher?.bio ?? userNode?.bio ?? '',
-      price_per_hour: teacher?.price_per_hour ?? userNode?.price_per_hour ?? null,
-      experience_years: teacher?.experience_years ?? userNode?.experience_years ?? null,
-      education: teacher?.education ?? userNode?.education ?? '',
-      email: teacher?.email ?? userNode?.email ?? '',
-    }
-  }
-
   const renderStars = (rating) => {
     const stars = []
     for (let i = 1; i <= 5; i++) {
@@ -156,6 +140,9 @@ export default function TeacherProfile() {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault()
+    
+    // Guardia temprana para evitar duplicados
+    if (submittingReview) return
     
     if (!reviewText.trim()) {
       setReviewError('La reseña no puede estar vacía')
@@ -193,7 +180,9 @@ export default function TeacherProfile() {
       console.error('Error creating review:', err)
       setReviewError(err.message || 'Error al enviar la reseña')
     } finally {
-      setSubmittingReview(false)
+      if (submittingReview) {
+        setSubmittingReview(false)
+      }
     }
   }
 

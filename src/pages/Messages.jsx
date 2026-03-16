@@ -55,6 +55,10 @@ export default function Messages() {
               setConversations((prev) => [...prev, created])
             } catch (err) {
               console.error('❌ Error creating conversation:', err)
+              // Mostrar error al usuario
+              if (currentRequestId === requestIdRef.current) {
+                setError('No se pudo iniciar la conversación. Intenta de nuevo.')
+              }
             }
           }
         }
@@ -64,7 +68,7 @@ export default function Messages() {
           const conversationId = searchParams.get('conversation')
           if (conversationId) {
             const foundConversation = Array.isArray(data)
-              ? data.find((conv) => conv.id === parseInt(conversationId))
+              ? data.find((conv) => String(conv.id) === String(conversationId))
               : null
             if (foundConversation && currentRequestId === requestIdRef.current) {
               setSelectedChat(foundConversation)

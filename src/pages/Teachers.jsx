@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
 import { teachersService } from '../services/teachersService'
 import { useAuth } from '../context/AuthContext'
+import { normalizeTeacher } from '../utils/teacherUtils'
 
 const teachersCache = new Map()
 
@@ -20,22 +21,6 @@ export default function Teachers() {
   const [error, setError] = useState(null)
   const hasLoadedOnceRef = useRef(false)
   const requestIdRef = useRef(0)
-
-  const normalizeTeacher = (teacher) => {
-    const userNode = teacher?.user || teacher
-    return {
-      id: teacher?.id ?? userNode?.id,
-      name: teacher?.name ?? userNode?.name ?? '',
-      subject: teacher?.subject ?? teacher?.specialty ?? userNode?.subject ?? '',
-      rating: teacher?.rating ?? userNode?.rating ?? null,
-      students_count: teacher?.students_count ?? teacher?.students ?? userNode?.students_count ?? 0,
-      avatar_url: teacher?.avatar_url ?? userNode?.avatar_url ?? null,
-      bio: teacher?.bio ?? userNode?.bio ?? '',
-      price_per_hour: teacher?.price_per_hour ?? userNode?.price_per_hour ?? null,
-      price: teacher?.price ?? userNode?.price ?? null,
-      image: teacher?.image ?? userNode?.image ?? null,
-    }
-  }
 
   const normalizeText = (value) =>
     String(value ?? '')
