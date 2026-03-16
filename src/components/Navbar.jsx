@@ -53,6 +53,14 @@ export default function Navbar() {
               💬 Mensajes
             </button>
 
+            {/* Productividad */}
+            <button
+              onClick={() => navigate('/productivity')}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
+            >
+              🚀 Productividad
+            </button>
+
             {/* Perfil con rol */}
             <button
               onClick={() => navigate('/profile')}
@@ -133,6 +141,16 @@ export default function Navbar() {
               className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             >
               💬 Mensajes
+            </button>
+
+            <button
+              onClick={() => {
+                navigate('/productivity')
+                setMenuOpen(false)
+              }}
+              className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+            >
+              🚀 Productividad
             </button>
 
             <button
