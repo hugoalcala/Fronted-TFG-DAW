@@ -213,9 +213,15 @@ export default function Profile() {
   }
 
   const handleSaveProfile = async () => {
-    if (!editData.name) {
+    const normalizedName = (editData.name ?? '').trim()
+
+    if (!normalizedName) {
       alert('Por favor completa el nombre')
       return
+    }
+
+    if (normalizedName !== editData.name) {
+      setEditData((prev) => ({ ...prev, name: normalizedName }))
     }
 
     const previousUser = user
@@ -247,7 +253,7 @@ export default function Profile() {
       
       // Luego actualizar los datos del perfil (sin email)
       const updatePayload = {
-        name: editData.name,
+        name: normalizedName,
       }
 
       // Solo incluir precio si el usuario es profesor
