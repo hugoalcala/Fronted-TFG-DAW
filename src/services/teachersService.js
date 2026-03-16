@@ -26,7 +26,18 @@ export const teachersService = {
 
       const data = await response.json()
       console.log('✅ Teachers fetched:', data)
-      return data.data || data
+
+      // Formato esperado: respuesta paginada Laravel { data: [...] }
+      if (Array.isArray(data?.data)) {
+        return data.data
+      }
+
+      // Compatibilidad por si llega envuelto en otro nivel.
+      if (Array.isArray(data?.data?.data)) {
+        return data.data.data
+      }
+
+      return []
 
     } catch (error) {
       console.error('❌ Error fetching teachers:', error)
