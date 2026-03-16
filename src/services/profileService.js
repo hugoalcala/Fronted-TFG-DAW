@@ -133,6 +133,45 @@ export const profileService = {
     }
   },
 
+  // Eliminar avatar y volver al avatar predeterminado
+  async removeAvatar() {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/profile/avatar`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Accept': 'application/json',
+          },
+        }
+      )
+
+      let data = null
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        data = await response.json()
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.message || 'Failed to remove avatar')
+      }
+
+      console.log('✅ Avatar removed:', data)
+
+      // Actualizar localStorage con el usuario actualizado
+      if (data?.data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.data.user))
+      }
+
+      return data || { success: true }
+
+    } catch (error) {
+      console.error('❌ Error removing avatar:', error)
+      throw error
+    }
+  },
+
   // Obtener estadísticas del usuario
   async getStats() {
     try {

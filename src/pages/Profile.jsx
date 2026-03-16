@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import AuthLayout from '../layouts/AuthLayout'
 import { profileService } from '../services/profileService'
 
 export default function Profile() {
-  const { user, updateUserRole } = useAuth()
+  const { user, updateUserRole, setUser } = useAuth()
   const [showTeacherForm, setShowTeacherForm] = useState(false)
   const [loadingTeacher, setLoadingTeacher] = useState(false)
   const [teacherData, setTeacherData] = useState({
@@ -13,6 +13,21 @@ export default function Profile() {
     price_per_hour: '',
   })
   const [certificateFile, setCertificateFile] = useState(null)
+  
+  // Estados para edición de perfil
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editData, setEditData] = useState({
+    name: '',
+    email: '',
+    price_per_hour: '',
+  })
+  const [loadingEdit, setLoadingEdit] = useState(false)
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(null)
+  const [removeAvatar, setRemoveAvatar] = useState(false)
+  const modalRef = useRef(null)
+  const firstInputRef = useRef(null)
+  const previousFocusedElementRef = useRef(null)
 
   // Lista de materias disponibles
   const availableSubjects = [
@@ -83,6 +98,206 @@ export default function Profile() {
     })
   }
 
+  const handleOpenEditModal = () => {
+    setEditData({
+      name: user?.name ?? '',
+      email: user?.email ?? '',
+      price_per_hour: user?.price_per_hour ?? '',
+    })
+    setAvatarFile(null)
+    setAvatarPreview(null)
+    setRemoveAvatar(false)
+    setShowEditModal(true)
+  }
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false)
+    setAvatarFile(null)
+    setAvatarPreview(null)
+    setRemoveAvatar(false)
+  }
+
+  useEffect(() => {
+    if (!showEditModal) {
+      return undefined
+    }
+
+    previousFocusedElementRef.current = document.activeElement
+
+    const focusTimer = setTimeout(() => {
+      firstInputRef.current?.focus()
+    }, 0)
+
+    const handleModalKeydown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        handleCloseEditModal()
+        return
+      }
+
+      if (event.key !== 'Tab' || !modalRef.current) {
+        return
+      }
+
+      const focusableElements = modalRef.current.querySelectorAll(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+
+      if (!focusableElements.length) {
+        event.preventDefault()
+        return
+      }
+
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements[focusableElements.length - 1]
+      const activeElement = document.activeElement
+
+      if (event.shiftKey) {
+        if (activeElement === firstElement || !modalRef.current.contains(activeElement)) {
+          event.preventDefault()
+          lastElement.focus()
+        }
+        return
+      }
+
+      if (activeElement === lastElement) {
+        event.preventDefault()
+        firstElement.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleModalKeydown)
+
+    return () => {
+      clearTimeout(focusTimer)
+      document.removeEventListener('keydown', handleModalKeydown)
+      previousFocusedElementRef.current?.focus?.()
+    }
+  }, [showEditModal])
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validar tipo de archivo (solo imágenes)
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+      if (!validTypes.includes(file.type)) {
+        alert('Por favor sube solo imágenes (JPEG, PNG, GIF, WebP)')
+        return
+      }
+      
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen es muy grande. Máximo 5MB')
+        return
+      }
+      
+      setRemoveAvatar(false)
+      setAvatarFile(file)
+      
+      // Crear vista previa
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result)
+      }
+      reader.onerror = () => {
+        setAvatarFile(null)
+        setAvatarPreview(null)
+        alert('No se pudo leer la imagen seleccionada. Intenta con otro archivo.')
+      }
+      reader.onabort = () => {
+        setAvatarFile(null)
+        setAvatarPreview(null)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleSaveProfile = async () => {
+    const normalizedName = (editData.name ?? '').trim()
+
+    if (!normalizedName) {
+      alert('Por favor completa el nombre')
+      return
+    }
+
+    if (normalizedName !== editData.name) {
+      setEditData((prev) => ({ ...prev, name: normalizedName }))
+    }
+
+    const previousUser = user
+    const refreshCanonicalUser = async () => {
+      const refreshedProfile = await profileService.getProfile()
+      const refreshedUser = refreshedProfile?.user ?? refreshedProfile
+      if (refreshedUser) {
+        setUser(refreshedUser)
+      }
+    }
+
+    try {
+      setLoadingEdit(true)
+      let failedStep = 'guardar los cambios del perfil'
+
+      // Si el usuario eligió quitar su foto, restaurar avatar predeterminado
+      if (removeAvatar) {
+        failedStep = 'eliminar el avatar actual'
+        await profileService.removeAvatar()
+        await refreshCanonicalUser()
+      }
+      
+      // Primero actualizar el avatar si hay uno nuevo
+      if (avatarFile) {
+        failedStep = 'subir la nueva imagen de perfil'
+        await profileService.updateAvatar(avatarFile)
+        await refreshCanonicalUser()
+      }
+      
+      // Luego actualizar los datos del perfil (sin email)
+      const updatePayload = {
+        name: normalizedName,
+      }
+
+      // Solo incluir precio si el usuario es profesor
+      if (user?.role === 'teacher') {
+        const rawPrice = editData.price_per_hour
+        const isEmptyPrice = rawPrice === '' || rawPrice === null || rawPrice === undefined
+
+        if (isEmptyPrice) {
+          updatePayload.price_per_hour = null
+        } else {
+          const parsedPrice = Number(rawPrice)
+          if (!Number.isFinite(parsedPrice)) {
+            alert('El precio por hora debe ser un número válido')
+            return
+          }
+          updatePayload.price_per_hour = parsedPrice
+        }
+      }
+
+      failedStep = 'actualizar los datos del perfil'
+      await profileService.updateProfile(updatePayload)
+      await refreshCanonicalUser()
+
+      alert('✅ Perfil actualizado exitosamente')
+      handleCloseEditModal()
+    } catch (error) {
+      console.error('Error updating profile:', error)
+
+      // Evitar UI inconsistente: intentar reflejar estado real del backend.
+      try {
+        await refreshCanonicalUser()
+      } catch (refreshError) {
+        console.warn('No se pudo refrescar el estado canónico tras error:', refreshError)
+        if (previousUser) {
+          setUser(previousUser)
+        }
+      }
+
+      alert(`Error al ${failedStep}: ${error.message || 'Error desconocido'}`)
+    } finally {
+      setLoadingEdit(false)
+    }
+  }
+
   const handleBecomeTeacher = async () => {
     if (!teacherData.subjects || teacherData.subjects.length === 0 || !teacherData.bio || teacherData.bio.trim().length === 0) {
       alert('Por favor selecciona al menos una materia y escribe tu biografía')
@@ -135,8 +350,16 @@ export default function Profile() {
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               {/* Avatar */}
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-4xl shadow-lg">
-                👤
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-4xl shadow-lg overflow-hidden">
+                {user?.avatar_url ? (
+                  <img 
+                    src={user.avatar_url} 
+                    alt={user.name} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>👤</span>
+                )}
               </div>
               
               {/* User Info */}
@@ -151,7 +374,10 @@ export default function Profile() {
             </div>
             
             {/* Edit Button */}
-            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+            <button 
+              onClick={handleOpenEditModal}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
               Editar Perfil
             </button>
           </div>
@@ -197,6 +423,17 @@ export default function Profile() {
                   {user?.role === 'teacher' ? '👨‍🏫 Profesor' : '👨‍🎓 Estudiante'}
                 </p>
               </div>
+              {/* Mostrar precio solo si es profesor */}
+              {user?.role === 'teacher' && (
+                <div>
+                  <label className="text-sm text-gray-600 dark:text-gray-400">Precio por hora</label>
+                  <p className="text-gray-900 dark:text-white font-medium">
+                    {user?.price_per_hour !== null && user?.price_per_hour !== undefined && user?.price_per_hour !== ''
+                      ? `$${user.price_per_hour}/hora`
+                      : 'No especificado'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -245,6 +482,192 @@ export default function Profile() {
             ))}
           </div>
         </div>
+
+        {/* Modal de Edición de Perfil */}
+        {showEditModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div
+              ref={modalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-profile-title"
+              className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-800"
+            >
+              <h2 id="edit-profile-title" className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                Editar Perfil
+              </h2>
+
+              <div className="space-y-4">
+                {/* Nombre */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Nombre *
+                  </label>
+                  <input
+                    ref={firstInputRef}
+                    type="text"
+                    value={editData.name}
+                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    placeholder="Tu nombre completo"
+                  />
+                </div>
+
+                {/* Email - Solo lectura */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={editData.email}
+                    disabled
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    El email no se puede cambiar por motivos de seguridad
+                  </p>
+                </div>
+
+                {/* Foto de perfil */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Foto de perfil 📸
+                  </label>
+                  <div className="flex items-center gap-4">
+                    {/* Vista previa del avatar */}
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-3xl shadow-lg overflow-hidden flex-shrink-0">
+                      {avatarPreview ? (
+                        <img 
+                          src={avatarPreview} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : removeAvatar ? (
+                        <span>👤</span>
+                      ) : user?.avatar_url ? (
+                        <img 
+                          src={user.avatar_url} 
+                          alt={user.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>👤</span>
+                      )}
+                    </div>
+                    
+                    {/* Input de archivo */}
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        id="avatar-upload"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="hidden"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label
+                          htmlFor="avatar-upload"
+                          className="cursor-pointer inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                        >
+                          {avatarFile ? 'Cambiar imagen' : 'Seleccionar imagen'}
+                        </label>
+
+                        {(user?.avatar_url || avatarPreview || removeAvatar) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (removeAvatar) {
+                                setRemoveAvatar(false)
+                              } else {
+                                setAvatarFile(null)
+                                setAvatarPreview(null)
+                                setRemoveAvatar(true)
+                              }
+                            }}
+                            className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                              removeAvatar
+                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                                : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            {removeAvatar ? 'Restaurar foto anterior' : 'Usar avatar predeterminado'}
+                          </button>
+                        )}
+
+                        {avatarFile && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAvatarFile(null)
+                              setAvatarPreview(null)
+                            }}
+                            className="inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            Quitar imagen nueva
+                          </button>
+                        )}
+                      </div>
+
+                      {removeAvatar && (
+                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                          Al guardar, se eliminará tu foto actual y se usará el avatar por defecto.
+                        </p>
+                      )}
+
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        JPG, PNG, GIF o WebP (máx 5MB)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Precio por hora - Solo para profesores */}
+                {user?.role === 'teacher' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Precio por hora 💰
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-600 dark:text-gray-400">$</span>
+                      <input
+                        type="number"
+                        value={editData.price_per_hour}
+                        onChange={(e) => setEditData({ ...editData, price_per_hour: e.target.value })}
+                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        placeholder="30"
+                        min="0"
+                        step="0.01"
+                      />
+                      <span className="text-gray-600 dark:text-gray-400">/hora</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Este es el precio que cobrarás por tus clases
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Botones */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={loadingEdit}
+                  className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingEdit ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+                <button
+                  onClick={handleCloseEditModal}
+                  disabled={loadingEdit}
+                  className="flex-1 px-6 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Sección para convertirse en profesor - Solo si no es profesor Y no tiene solicitud pendiente */}
         {user?.role !== 'teacher' && user?.role !== 'pending_teacher' && user?.teacher_status !== 'pending' && (
