@@ -6,7 +6,6 @@ import { useAuth } from '../context/AuthContext'
 
 export default function Messages() {
   const [searchParams] = useSearchParams()
-  const { user } = useAuth()
   const [conversations, setConversations] = useState([])
   const [selectedChat, setSelectedChat] = useState(null)
   const [newMessage, setNewMessage] = useState('')
@@ -22,6 +21,7 @@ export default function Messages() {
 
       try {
         setLoading(true)
+        setError(null)
         const data = await messagesService.getConversations()
         
         // Ignorar si hay una request más nueva
@@ -72,9 +72,15 @@ export default function Messages() {
         }
       } catch (err) {
         console.error('Error loading conversations:', err)
-        setError('No se pudieron cargar los mensajes')
+        // Proteger contra requests obsoletas antes de actualizar estado
+        if (currentRequestId === requestIdRef.current) {
+          setError('No se pudieron cargar los mensajes')
+        }
       } finally {
-        setLoading(false)
+        // Proteger contra requests obsoletas antes de actualizar estado
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false)
+        }
       }
     }
 
@@ -203,7 +209,7 @@ export default function Messages() {
             ) : (
               <div className="p-6 text-center">
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  {loading ? 'Cargando conversaciones...' : 'No tienes conversaciones aún'}
+                  No tienes conversaciones aún
                 </p>
               </div>
             )}
@@ -265,7 +271,7 @@ export default function Messages() {
                   placeholder="Escribe un mensaje..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !sendingMessage && handleSendMessage()}
+                  onKeyDown={(e) => e.key === 'Enter' && !sendingMessage && (e.preventDefault(), handleSendMessage())}
                   disabled={sendingMessage}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50"
                 />

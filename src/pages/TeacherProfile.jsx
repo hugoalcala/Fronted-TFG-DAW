@@ -133,6 +133,7 @@ export default function TeacherProfile() {
           onClick={() => setStudentRating(i)}
           aria-label={`${i} ${i === 1 ? 'estrella' : 'estrellas'}`}
           aria-pressed={i === rating}
+          aria-current={i === rating ? 'true' : undefined}
           className={`text-2xl transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400 rounded ${
             i <= rating ? 'text-yellow-400' : 'text-gray-300'
           }`}
@@ -161,16 +162,17 @@ export default function TeacherProfile() {
         review: reviewText.trim(),
       })
 
-      setReviewSuccess(true)
-      setReviewText('')
-      setStudentRating(5)
-      setShowReviewForm(false)
-
-      // Recargar ratings
+      // Recargar ratings primero
       const ratingsData = await ratingsService.getTeacherRatings(teacherId)
       setRatings(ratingsData?.ratings || [])
       setAverageRating(ratingsData?.average || null)
       setTotalReviews(ratingsData?.total_count || 0)
+
+      // Solo después de éxito, mostrar feedback y cerrar formulario
+      setReviewSuccess(true)
+      setReviewText('')
+      setStudentRating(5)
+      setShowReviewForm(false)
 
       setTimeout(() => setReviewSuccess(false), 3000)
     } catch (err) {
@@ -376,20 +378,31 @@ export default function TeacherProfile() {
             <form onSubmit={handleSubmitReview}>
               {/* Rating */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
+                <label 
+                  id="rating-label"
+                  className="block text-sm font-medium text-gray-900 dark:text-white mb-3"
+                >
                   Calificación
                 </label>
-                <div className="flex gap-2">
+                <div 
+                  className="flex gap-2"
+                  role="radiogroup"
+                  aria-labelledby="rating-label"
+                >
                   {renderStars(studentRating)}
                 </div>
               </div>
 
               {/* Texto de la reseña */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
+                <label 
+                  htmlFor="review-text"
+                  className="block text-sm font-medium text-gray-900 dark:text-white mb-3"
+                >
                   Tu reseña
                 </label>
                 <textarea
+                  id="review-text"
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                   placeholder="Comparte tu experiencia con este profesor..."
