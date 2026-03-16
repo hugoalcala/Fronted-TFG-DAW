@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
 import { useAuth } from '../context/AuthContext'
@@ -34,6 +34,7 @@ export default function TeacherProfile() {
 
       try {
         setLoading(true)
+        setError(null)
         console.log('📍 Loading teacher profile for ID:', teacherId)
         
         let teacherData = null
@@ -187,7 +188,7 @@ export default function TeacherProfile() {
       
       // Buscar si ya existe una conversación con este profesor
       const existingConversation = conversations.find(
-        (conv) => conv.recipient_id === teacherId || conv.user_id === teacherId
+        (conv) => String(conv.recipient_id) === String(teacherId) || String(conv.user_id) === String(teacherId)
       )
 
       if (existingConversation) {

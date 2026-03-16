@@ -132,6 +132,10 @@ export default function Teachers() {
   })
 
   const handleContactTeacher = (teacherId) => {
+    if (!teacherId) {
+      console.warn('⚠️ No valid teacher ID provided')
+      return
+    }
     navigate(`/teachers/${teacherId}`)
   }
 
@@ -254,7 +258,8 @@ export default function Teachers() {
                   </span>
                   <button 
                     onClick={() => handleContactTeacher(teacher.id)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    disabled={!teacher.id}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                   >
                     Ver perfil
                   </button>

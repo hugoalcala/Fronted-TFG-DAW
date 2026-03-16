@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
 import { messagesService } from '../services/messagesService'
@@ -13,13 +13,20 @@ export default function Messages() {
   const [loading, setLoading] = useState(true)
   const [sendingMessage, setSendingMessage] = useState(false)
   const [error, setError] = useState(null)
+  const requestIdRef = useRef(0)
 
   // Cargar conversaciones
   useEffect(() => {
     const loadConversations = async () => {
+      const currentRequestId = ++requestIdRef.current
+
       try {
         setLoading(true)
         const data = await messagesService.getConversations()
+        
+        // Ignorar si hay una request más nueva
+        if (currentRequestId !== requestIdRef.current) return
+        
         setConversations(Array.isArray(data) ? data : [])
 
         // Si viene un parámetro newChat, crear o encontrar conversación con ese usuario
@@ -33,11 +40,17 @@ export default function Messages() {
           
           if (existingConv) {
             console.log('✅ Conversación existente encontrada')
-            setSelectedChat(existingConv)
+            if (currentRequestId === requestIdRef.current) {
+              setSelectedChat(existingConv)
+            }
           } else {
             console.log('🆕 Creando nueva conversación')
             try {
               const newConversation = await messagesService.createConversation(newChatId)
+              
+              // Proteger contra requests obsoletas
+              if (currentRequestId !== requestIdRef.current) return
+              
               const created = newConversation.data || newConversation
               setSelectedChat(created)
               setConversations((prev) => [...prev, created])
@@ -72,24 +85,45 @@ export default function Messages() {
     if (!newMessage.trim() || !selectedChat) return
 
     setSendingMessage(true)
+    const targetChatId = selectedChat.id
+    const messageText = newMessage.trim()
+    
     try {
-      await messagesService.sendMessage(selectedChat.id, newMessage.trim())
+      await messagesService.sendMessage(targetChatId, messageText)
       console.log('✅ Mensaje enviado')
       setNewMessage('')
-      // Actualizar el chat localmente con el nuevo mensaje
-      setSelectedChat((prev) => ({
-        ...prev,
-        lastMessage: newMessage.trim(),
-        messages: [
-          ...(prev.messages || []),
-          {
-            id: Date.now(),
-            sender: 'Tú',
-            text: newMessage.trim(),
-            time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-          },
-        ],
-      }))
+      
+      // Crear objeto de mensaje consistente
+      const newMsg = {
+        id: Date.now(),
+        sender: 'Tú',
+        text: messageText,
+        time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      }
+      
+      // Actualizar conversación en la lista
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === targetChatId
+            ? {
+                ...conv,
+                lastMessage: messageText,
+                messages: [...(conv.messages || []), newMsg],
+              }
+            : conv
+        )
+      )
+      
+      // Actualizar selectedChat solo si aún es el mismo
+      setSelectedChat((prev) =>
+        prev?.id === targetChatId
+          ? {
+              ...prev,
+              lastMessage: messageText,
+              messages: [...(prev.messages || []), newMsg],
+            }
+          : prev
+      )
     } catch (err) {
       console.error('Error sending message:', err)
       setError('Error al enviar el mensaje')
