@@ -37,20 +37,24 @@ export const productivityService = {
   },
 
   // Crear una nueva tarea (title requerido, category default 'general')
-  async createTask(title, description = '', category = 'general') {
+  async createTask(title, description = '', category = 'general', dueDate = null, startDate = null) {
     if (!title || !title.trim()) {
       throw new Error('Title is required')
     }
 
     try {
+      const body = {
+        title: title.trim(),
+        description,
+        category,
+      }
+      if (dueDate) body.due_date = dueDate
+      if (startDate) body.started_at = startDate
+
       const response = await fetch(`${API_BASE_URL}/tasks`, {
         method: 'POST',
         headers: getAuthHeader(),
-        body: JSON.stringify({
-          title: title.trim(),
-          description,
-          category,
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {

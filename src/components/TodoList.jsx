@@ -4,6 +4,7 @@ import { productivityService } from '../services/productivityService'
 export default function TodoList() {
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
+  const [newDueDate, setNewDueDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState('all')
   const [category, setCategory] = useState('general')
@@ -45,9 +46,11 @@ export default function TodoList() {
 
     try {
       setLoading(true)
-      const created = await productivityService.createTask(newTask.trim(), '', category)
-      setTasks([...tasks, created])
+      await productivityService.createTask(newTask.trim(), '', category, newDueDate || null)
       setNewTask('')
+      setNewDueDate('')
+      // Recargar tareas para obtener la tarea creada con todas las fechas del backend
+      await loadTasks()
     } catch (error) {
       console.error('Error creating task:', error)
       alert('Error al crear la tarea')
@@ -112,6 +115,20 @@ export default function TodoList() {
         alert('Error al eliminar la tarea: ' + error.message)
       }
     }
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return null
+    const date = new Date(dateString)
+    return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: '2-digit' })
+  }
+
+  const isOverdue = (task) => {
+    if (!task.due_date || task.status === 'completed' || task.completed) return false
+    const dueDate = new Date(task.due_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return dueDate < today
   }
 
   const filteredTasks = tasks.filter((task) => {
@@ -179,6 +196,13 @@ export default function TodoList() {
               </option>
             ))}
           </select>
+          <input
+            type="date"
+            value={newDueDate}
+            onChange={(e) => setNewDueDate(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            title="Fecha límite"
+          />
         </div>
         <button
           type="submit"
@@ -276,7 +300,19 @@ export default function TodoList() {
                 >
                   {task.title}
                 </p>
-                <div className="flex gap-2 mt-1 flex-wrap items-center">
+                <div className="flex gap-2 mt-1 flex-wrap items-center text-xs">
+                  {task.started_at && (
+                    <span className="text-gray-500 dark:text-gray-400">
+                      📅 Iniciada: {formatDate(task.started_at)}
+                    </span>
+                  )}
+                  {task.due_date && (
+                    <span className={`${isOverdue(task) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>
+                      ⏰ Límite: {formatDate(task.due_date)} {isOverdue(task) && '⚠️'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-2 flex-wrap items-center">
                   {task.category && (
                     <span
                       className={`inline-block text-xs px-2 py-1 rounded ${
