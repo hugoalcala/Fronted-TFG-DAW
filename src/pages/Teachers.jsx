@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout'
 import { teachersService } from '../services/teachersService'
 import { useAuth } from '../context/AuthContext'
+import { normalizeTeacher } from '../utils/teacherUtils'
 
 const teachersCache = new Map()
 
@@ -10,6 +12,7 @@ const getFiltersCacheKey = (searchTerm) =>
 
 export default function Teachers() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterSubject, setFilterSubject] = useState('todas')
   const [teachers, setTeachers] = useState([])
@@ -18,22 +21,6 @@ export default function Teachers() {
   const [error, setError] = useState(null)
   const hasLoadedOnceRef = useRef(false)
   const requestIdRef = useRef(0)
-
-  const normalizeTeacher = (teacher) => {
-    const userNode = teacher?.user || teacher
-    return {
-      id: teacher?.id ?? userNode?.id ?? crypto.randomUUID(),
-      name: teacher?.name ?? userNode?.name ?? '',
-      subject: teacher?.subject ?? teacher?.specialty ?? userNode?.subject ?? '',
-      rating: teacher?.rating ?? userNode?.rating ?? null,
-      students_count: teacher?.students_count ?? teacher?.students ?? userNode?.students_count ?? 0,
-      avatar_url: teacher?.avatar_url ?? userNode?.avatar_url ?? null,
-      bio: teacher?.bio ?? userNode?.bio ?? '',
-      price_per_hour: teacher?.price_per_hour ?? userNode?.price_per_hour ?? null,
-      price: teacher?.price ?? userNode?.price ?? null,
-      image: teacher?.image ?? userNode?.image ?? null,
-    }
-  }
 
   const normalizeText = (value) =>
     String(value ?? '')
@@ -129,10 +116,12 @@ export default function Teachers() {
     return matchesSearch && matchesSubject
   })
 
-  const handleContactTeacher = async (teacherId) => {
-    console.log('Contactando a profesor:', teacherId)
-    // TODO: Implementar modal para enviar mensaje de contacto
-    alert('Función de contacto próximamente')
+  const handleContactTeacher = (teacherId) => {
+    if (!teacherId) {
+      console.warn('⚠️ No valid teacher ID provided')
+      return
+    }
+    navigate(`/teachers/${teacherId}`)
   }
 
   return (
@@ -254,9 +243,10 @@ export default function Teachers() {
                   </span>
                   <button 
                     onClick={() => handleContactTeacher(teacher.id)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    disabled={!teacher.id}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                   >
-                    Contactar
+                    Ver perfil
                   </button>
                 </div>
               </div>
