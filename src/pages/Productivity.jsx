@@ -16,7 +16,7 @@ export default function Productivity() {
     <AuthLayout>
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             🚀 Centro de Productividad
           </h1>
@@ -26,7 +26,7 @@ export default function Productivity() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2 justify-center">
           <button
             onClick={() => setActiveTab('overview')}
             className={`px-6 py-3 rounded-lg font-medium whitespace-nowrap transition-all ${
