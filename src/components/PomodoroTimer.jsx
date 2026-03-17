@@ -16,9 +16,29 @@ export default function PomodoroTimer({ onSessionComplete }) {
   const WORK_TIME = customWorkTime * 60
   const BREAK_TIME = 5 * 60
 
+  const [notificationPermission, setNotificationPermission] = useState('default')
+
   useEffect(() => {
     loadTasks()
+    checkAndRequestNotificationPermission()
   }, [])
+
+  const checkAndRequestNotificationPermission = async () => {
+    if ('Notification' in window) {
+      console.log('🔔 Notificaciones disponibles')
+      console.log('🔔 Estado actual:', Notification.permission)
+      setNotificationPermission(Notification.permission)
+      
+      if (Notification.permission === 'default') {
+        console.log('🔔 Solicitando permiso para notificaciones...')
+        const permission = await Notification.requestPermission()
+        console.log('🔔 Permiso resultante:', permission)
+        setNotificationPermission(permission)
+      }
+    } else {
+      console.log('❌ Notificaciones no soportadas en este navegador')
+    }
+  }
 
   const loadTasks = async () => {
     try {
@@ -57,7 +77,8 @@ export default function PomodoroTimer({ onSessionComplete }) {
   }, [isActive, seconds, sessionStartTime])
 
   const handleSessionComplete = async () => {
-    console.log('🔔 handleSessionComplete iniciado')
+    console.log('🔔 handleSessionComplete iniciado', { isBreak, seconds })
+    alert('✅ Sesión completada: ' + (isBreak ? 'Descanso' : 'Pomodoro'))
     
     // Reproducir sonido de notificación
     if (audioRef.current) {
@@ -91,6 +112,43 @@ export default function PomodoroTimer({ onSessionComplete }) {
         alert('⚠️ La tarea seleccionada no te pertenece. Desvinculando...')
         setSelectedTask(null)
       }
+    }
+
+    // Mostrar notificación del sistema
+    console.log('🔔 Iniciando proceso de notificación...')
+    console.log('🔔 Permiso actual:', Notification.permission)
+    console.log('🔔 isBreak:', isBreak)
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const title = isBreak ? '☕ Descanso completado' : '🍅 Pomodoro completado'
+      const body = isBreak 
+        ? '¡Tu descanso terminó! Vuelve al trabajo cuando estés listo.' 
+        : '¡Excelente! Completaste una sesión de enfoque. Ahora descansa un poco.'
+      
+      console.log('✅ Permiso granted. Creando notificación:', title)
+      
+      try {
+        const notification = new Notification(title, {
+          body: body,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+          tag: 'pomodoro',
+          requireInteraction: true,
+        })
+        
+        console.log('✅ Notificación creada exitosamente')
+        
+        notification.onclick = () => {
+          console.log('✅ Notificación clickeada')
+          window.focus()
+        }
+      } catch (error) {
+        console.error('❌ Error al crear notificación:', error)
+        alert('⚠️ Error creando notificación: ' + error.message)
+      }
+    } else {
+      console.log('⚠️ No se pudo mostrar notificación. Permiso:', Notification.permission)
+      alert('⚠️ Las notificaciones no tienen permiso. Permiso actual: ' + Notification.permission)
     }
 
     if (!isBreak) {
@@ -139,6 +197,21 @@ export default function PomodoroTimer({ onSessionComplete }) {
     setIsActive(false)
     
     if (isBreak) {
+      // Mostrar notificación al saltar descanso
+      if ('Notification' in window && Notification.permission === 'granted') {
+        console.log('✅ Mostrando notificación de descanso saltado')
+        try {
+          new Notification('☕ Descanso saltado', {
+            body: '¡Vaya! Saltaste tu descanso. Recuerda descansar regularmente.',
+            icon: '☕',
+            badge: '☕',
+            tag: 'pomodoro-notification',
+          })
+        } catch (error) {
+          console.error('❌ Error en notificación:', error)
+        }
+      }
+      
       setIsBreak(false)
       setSeconds(WORK_TIME)
       setSessionStartTime(null)
@@ -169,6 +242,21 @@ export default function PomodoroTimer({ onSessionComplete }) {
         console.error('❌ Error guardando sesión:', error.message)
         alert('⚠️ No se pudo guardar la sesión. Revisa la conexión con el servidor.')
         return
+      }
+      
+      // Mostrar notificación 
+      if ('Notification' in window && Notification.permission === 'granted') {
+        console.log('✅ Mostrando notificación de sesión saltada')
+        try {
+          new Notification('🍅 Sesión saltada', {
+            body: 'Saltaste esta sesión, pero se registró igual. ¡Continúa con el siguiente descanso!',
+            icon: '🍅',
+            badge: '🍅',
+            tag: 'pomodoro-notification',
+          })
+        } catch (error) {
+          console.error('❌ Error en notificación:', error)
+        }
       }
       
       setSessionStartTime(null)
@@ -307,6 +395,27 @@ export default function PomodoroTimer({ onSessionComplete }) {
         >
           ⏭️ Saltar
         </button>
+      </div>
+
+      {/* Botón de Notificaciones */}
+      <div className="mt-4">
+        {notificationPermission === 'granted' ? (
+          <div className="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg text-sm text-center font-medium">
+            🔔 Notificaciones habilitadas
+          </div>
+        ) : notificationPermission === 'denied' ? (
+          <div className="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg text-sm text-center">
+            <p className="font-medium mb-2">❌ Notificaciones bloqueadas</p>
+            <p className="text-xs mb-2">Ve a Configuración del navegador para habilitarlas.</p>
+          </div>
+        ) : (
+          <button
+            onClick={checkAndRequestNotificationPermission}
+            className="w-full px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-all"
+          >
+            🔔 Habilitar notificaciones
+          </button>
+        )}
       </div>
 
       {/* Instrucciones */}
