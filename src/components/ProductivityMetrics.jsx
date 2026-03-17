@@ -107,44 +107,6 @@ export default function ProductivityMetrics({ refreshTrigger }) {
             </div>
           </div>
 
-          {/* Gráfico de actividad */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              📈 Actividad {timeFrame === 'day' ? 'hoy' : timeFrame === 'week' ? 'esta semana' : 'este mes'}
-            </h3>
-            <div className="flex items-end justify-between gap-2 h-40 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              {(metrics.daily_breakdown && metrics.daily_breakdown.length > 0) ? (
-                metrics.daily_breakdown.map((item, idx) => {
-                  const maxTasks = Math.max(...metrics.daily_breakdown.map(d => d.completed_tasks || 0), 1)
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                      <div
-                        className="w-full bg-gradient-to-t from-blue-500 to-blue-300 rounded-t relative group cursor-pointer"
-                        style={{ height: `${maxTasks > 0 ? ((item.completed_tasks || 0) / maxTasks) * 100 : 0}%` }}
-                      >
-                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                          {item.completed_tasks || 0} tareas
-                        </div>
-                      </div>
-                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                        {item.date ? new Date(item.date).toLocaleDateString('es-ES', { weekday: 'short' }).charAt(0).toUpperCase() : '?'}
-                      </span>
-                    </div>
-                  )
-                })
-              ) : (
-                // Gráfico vacío si no hay datos
-                [0, 1, 2, 3, 4, 5, 6].map((idx) => (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                    <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-t" style={{ height: '20%' }} />
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                      {['L', 'M', 'X', 'J', 'V', 'S', 'D'][idx]}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
           {/* Botón de actualizar */}
           <button
             onClick={loadMetrics}
