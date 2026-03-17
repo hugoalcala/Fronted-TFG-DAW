@@ -33,48 +33,7 @@ export default function ProductivityMetrics({ refreshTrigger }) {
     }
   }
 
-  // Calcular racha de días seguidos con Pomodoros
-  const calculateStreak = () => {
-    if (!metrics?.daily_breakdown || metrics.daily_breakdown.length === 0) {
-      return 0
-    }
 
-    // Ordenar por fecha descendente (más reciente primero)
-    const sortedDays = [...metrics.daily_breakdown].sort((a, b) => {
-      return new Date(b.date) - new Date(a.date)
-    })
-
-    let streak = 0
-    let currentDate = new Date()
-    currentDate.setHours(0, 0, 0, 0)
-
-    for (const day of sortedDays) {
-      const dayDate = new Date(day.date)
-      dayDate.setHours(0, 0, 0, 0)
-
-      // Calcular diferencia en días
-      const daysDiff = Math.floor((currentDate - dayDate) / (1000 * 60 * 60 * 24))
-
-      // Si es del mismo día o del día anterior
-      if (daysDiff === streak) {
-        // Si tiene al menos 1 sesión pomodoro
-        if (day.pomodoro_count > 0 || day.focus_time > 0) {
-          streak++
-          currentDate = dayDate
-        } else {
-          // Si no tiene sesiones, termina la racha
-          break
-        }
-      } else if (daysDiff > streak) {
-        // Hay un gap, termina la racha
-        break
-      }
-    }
-
-    return streak
-  }
-
-  const streakDays = calculateStreak()
 
   if (loading && !metrics) {
     return (

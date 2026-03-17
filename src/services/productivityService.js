@@ -233,7 +233,7 @@ export const productivityService = {
       console.error('Error getting metrics:', error)
       // Retornar métricas vacías por defecto con los campos correctos del backend
       return {
-        period: 'week',
+        period: period ?? 'week',
         total_tasks: 0,
         completed_tasks: 0,
         period_completed: 0,

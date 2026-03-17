@@ -25,18 +25,12 @@ export default function PomodoroTimer({ onSessionComplete }) {
 
   const checkAndRequestNotificationPermission = async () => {
     if ('Notification' in window) {
-      console.log('🔔 Notificaciones disponibles')
-      console.log('🔔 Estado actual:', Notification.permission)
       setNotificationPermission(Notification.permission)
       
       if (Notification.permission === 'default') {
-        console.log('🔔 Solicitando permiso para notificaciones...')
         const permission = await Notification.requestPermission()
-        console.log('🔔 Permiso resultante:', permission)
         setNotificationPermission(permission)
       }
-    } else {
-      console.log('❌ Notificaciones no soportadas en este navegador')
     }
   }
 
