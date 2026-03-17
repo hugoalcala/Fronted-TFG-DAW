@@ -25,6 +25,7 @@ export const productivityService = {
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeader(),
+        credentials: 'include',
       })
 
       if (!response.ok) throw new Error(`Error fetching tasks: ${response.status}`)
@@ -54,6 +55,7 @@ export const productivityService = {
       const response = await fetch(`${API_BASE_URL}/tasks`, {
         method: 'POST',
         headers: getAuthHeader(),
+        credentials: 'include',
         body: JSON.stringify(body),
       })
 
@@ -76,6 +78,7 @@ export const productivityService = {
       const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
         method: 'GET',
         headers: getAuthHeader(),
+        credentials: 'include',
       })
 
       if (response.status === 403) {
@@ -107,6 +110,7 @@ export const productivityService = {
       const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
         method: 'PATCH',
         headers: getAuthHeader(),
+        credentials: 'include',
         body: JSON.stringify(updates),
       })
 
@@ -132,6 +136,7 @@ export const productivityService = {
       const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
         method: 'DELETE',
         headers: getAuthHeader(),
+        credentials: 'include',
       })
 
       if (response.status === 403) {
@@ -159,6 +164,7 @@ export const productivityService = {
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeader(),
+        credentials: 'include',
       })
 
       if (!response.ok) throw new Error('Error fetching pomodoro sessions')
@@ -177,22 +183,31 @@ export const productivityService = {
       const response = await fetch(`${API_BASE_URL}/pomodoro-sessions`, {
         method: 'POST',
         headers: getAuthHeader(),
+        credentials: 'include',
         body: JSON.stringify(data),
       })
+
+      if (response.status === 401) {
+        throw new Error('Token inválido o expirado. Por favor, inicia sesión de nuevo.')
+      }
+      
+      if (response.status === 403) {
+        throw new Error('No tienes permisos para esta acción')
+      }
 
       if (response.status === 422) {
         const error = await response.json()
         throw new Error(error.message || 'La tarea seleccionada no es válida')
       }
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Error creating pomodoro session')
+        throw new Error(`Error ${response.status}: No se pudo guardar la sesión`)
       }
 
       const responseData = await response.json()
       return responseData.data || responseData
     } catch (error) {
-      console.error('Error creating pomodoro session:', error)
+      console.error('Error creando sesión pomodoro:', error.message)
       throw error
     }
   },
@@ -207,6 +222,7 @@ export const productivityService = {
       const response = await fetch(`${API_BASE_URL}/productivity-metrics?${params.toString()}`, {
         method: 'GET',
         headers: getAuthHeader(),
+        credentials: 'include',
       })
 
       if (!response.ok) throw new Error('Error fetching metrics')
@@ -215,13 +231,16 @@ export const productivityService = {
       return data.data || data
     } catch (error) {
       console.error('Error getting metrics:', error)
-      // Retornar métricas vacías por defecto
+      // Retornar métricas vacías por defecto con los campos correctos del backend
       return {
+        period: 'week',
         total_tasks: 0,
         completed_tasks: 0,
+        period_completed: 0,
         completion_rate: 0,
-        total_focus_time: 0,
-        pomodoro_count: 0,
+        focus_sessions: 0,
+        focus_minutes: 0,
+        focus_hours: 0,
         daily_breakdown: [],
       }
     }

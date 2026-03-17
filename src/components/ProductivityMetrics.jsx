@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { productivityService } from '../services/productivityService'
 
-export default function ProductivityMetrics() {
+export default function ProductivityMetrics({ refreshTrigger }) {
   const [metrics, setMetrics] = useState(null)
   const [loading, setLoading] = useState(false)
   const [timeFrame, setTimeFrame] = useState('week')
@@ -12,6 +12,13 @@ export default function ProductivityMetrics() {
     const interval = setInterval(loadMetrics, 60000)
     return () => clearInterval(interval)
   }, [timeFrame])
+
+  // Recargar cuando se complete un pomodoro
+  useEffect(() => {
+    if (refreshTrigger) {
+      loadMetrics()
+    }
+  }, [refreshTrigger])
 
   const loadMetrics = async () => {
     try {
@@ -70,13 +77,13 @@ export default function ProductivityMetrics() {
             />
             <MetricCard
               label="Sesiones Pomodoro"
-              value={metrics.pomodoro_count || 0}
+              value={metrics.focus_sessions || 0}
               icon="🍅"
               color="red"
             />
             <MetricCard
-              label="Horas de enfoque"
-              value={((metrics.total_focus_time || 0) / 3600).toFixed(1)}
+              label="Minutos de enfoque"
+              value={metrics.focus_minutes || 0}
               icon="⏱️"
               color="purple"
             />
@@ -108,15 +115,15 @@ export default function ProductivityMetrics() {
             <div className="flex items-end justify-between gap-2 h-40 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
               {(metrics.daily_breakdown && metrics.daily_breakdown.length > 0) ? (
                 metrics.daily_breakdown.map((item, idx) => {
-                  const maxTasks = Math.max(...metrics.daily_breakdown.map(d => d.tasks_completed || 0), 1)
+                  const maxTasks = Math.max(...metrics.daily_breakdown.map(d => d.completed_tasks || 0), 1)
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-2">
                       <div
                         className="w-full bg-gradient-to-t from-blue-500 to-blue-300 rounded-t relative group cursor-pointer"
-                        style={{ height: `${maxTasks > 0 ? ((item.tasks_completed || 0) / maxTasks) * 100 : 0}%` }}
+                        style={{ height: `${maxTasks > 0 ? ((item.completed_tasks || 0) / maxTasks) * 100 : 0}%` }}
                       >
                         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                          {item.tasks_completed || 0} tareas
+                          {item.completed_tasks || 0} tareas
                         </div>
                       </div>
                       <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
@@ -150,10 +157,10 @@ export default function ProductivityMetrics() {
               ) : (
                 <li>• ¡Excelente progreso! Sigue así.</li>
               )}
-              {metrics.pomodoro_count < 5 ? (
+              {(metrics.focus_sessions || 0) < 5 ? (
                 <li>• Usa la técnica Pomodoro para aumentar tu enfoque.</li>
               ) : (
-                <li>• Ya tienes {metrics.pomodoro_count} sesiones Pomodoro esta semana. ¡Sigue avanzando!</li>
+                <li>• Ya tienes {metrics.focus_sessions} sesiones Pomodoro esta semana. ¡Sigue avanzando!</li>
               )}
               {metrics.total_tasks > 20 ? (
                 <li>• Tienes muchas tareas. Considera priorizar las más importantes.</li>

@@ -6,10 +6,11 @@ import ProductivityMetrics from '../components/ProductivityMetrics'
 
 export default function Productivity() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [pomodorosCompletedThisSession, setPomodorosCompletedThisSession] = useState(0)
+  const [refreshMetrics, setRefreshMetrics] = useState(0)
 
   const handlePomodoroSessionComplete = () => {
-    setPomodorosCompletedThisSession((prev) => prev + 1)
+    // Disparar recarga de métricas
+    setRefreshMetrics((prev) => prev + 1)
   }
 
   return (
@@ -161,7 +162,7 @@ export default function Productivity() {
 
           {activeTab === 'metrics' && (
             <div className="max-w-4xl mx-auto">
-              <ProductivityMetrics />
+              <ProductivityMetrics refreshTrigger={refreshMetrics} />
             </div>
           )}
         </div>

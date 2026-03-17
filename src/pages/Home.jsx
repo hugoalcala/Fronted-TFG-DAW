@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
+import logo from '../assets/educonnect_logo.png'
 
 function Home() {
   const navigate = useNavigate()
@@ -10,9 +11,16 @@ function Home() {
       {/* Navbar */}
       <nav className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-400">
-            🎓 EduConnect
-          </h1>
+          <button
+            onClick={() => navigate('/')}
+            className="hover:opacity-80 transition-opacity flex-shrink-0"
+          >
+            <img
+              src={logo}
+              alt="EduConnect"
+              className="h-10 w-auto"
+            />
+          </button>
           <button
             onClick={toggleTheme}
             className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

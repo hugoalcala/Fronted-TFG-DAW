@@ -11,6 +11,7 @@ export default function PomodoroTimer({ onSessionComplete }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(false)
   const audioRef = useRef(null)
+  const [sessionStartTime, setSessionStartTime] = useState(null) // Rastrear cuándo inició realmente
 
   const WORK_TIME = customWorkTime * 60
   const BREAK_TIME = 5 * 60
@@ -37,17 +38,27 @@ export default function PomodoroTimer({ onSessionComplete }) {
     let interval = null
 
     if (isActive && seconds > 0) {
+      // Registrar cuándo inició la sesión (solo la primera vez)
+      if (!sessionStartTime) {
+        setSessionStartTime(Date.now())
+      }
+      
       interval = setInterval(() => {
         setSeconds((s) => s - 1)
       }, 1000)
     } else if (seconds === 0 && isActive) {
       handleSessionComplete()
+    } else if (!isActive) {
+      // Resetear cuando se pausa
+      setSessionStartTime(null)
     }
 
     return () => clearInterval(interval)
-  }, [isActive, seconds])
+  }, [isActive, seconds, sessionStartTime])
 
   const handleSessionComplete = async () => {
+    console.log('🔔 handleSessionComplete iniciado')
+    
     // Reproducir sonido de notificación
     if (audioRef.current) {
       audioRef.current.play().catch(() => {})
@@ -57,18 +68,24 @@ export default function PomodoroTimer({ onSessionComplete }) {
 
     // Guardar sesión en backend
     try {
-      const sessionDuration = isBreak ? BREAK_TIME : WORK_TIME
+      // Calcular tiempo REAL que pasó, no la duración configurada
+      const timeElapsed = sessionStartTime ? Math.round((Date.now() - sessionStartTime) / 1000) : (isBreak ? BREAK_TIME : WORK_TIME)
+      const durationMinutes = Math.max(1, Math.ceil(timeElapsed / 60)) // Mínimo 1 minuto
+      
       const sessionData = {
-        duration: sessionDuration,
+        duration_minutes: durationMinutes,
         task_id: selectedTask?.id || null,
-        is_break: isBreak,
-        completed_at: new Date().toISOString(),
+        type: isBreak ? 'short_break' : 'focus',
+        started_at: new Date(Date.now() - timeElapsed * 1000).toISOString(),
+        completed: true,
       }
 
-      await productivityService.createPomodoroSession(sessionData)
-      console.log('✅ Sesión pomodoro guardada')
+      console.log('📤 Enviando sesión pomodoro:', sessionData)
+      const response = await productivityService.createPomodoroSession(sessionData)
+      console.log('✅ Sesión pomodoro guardada:', response)
     } catch (error) {
-      console.error('Error saving pomodoro session:', error)
+      console.error('❌ Error saving pomodoro session:', error.message)
+      console.error('Error completo:', error)
       // Mostrar mensaje de error pero continuar con el flujo
       if (error.message.includes('no es válida')) {
         alert('⚠️ La tarea seleccionada no te pertenece. Desvinculando...')
@@ -89,14 +106,24 @@ export default function PomodoroTimer({ onSessionComplete }) {
       setIsBreak(false)
       setSeconds(WORK_TIME)
     }
+    
+    setSessionStartTime(null) // Resetear
   }
 
   const toggleTimer = () => {
+    if (!isActive) {
+      // Al iniciar, registrar la hora
+      setSessionStartTime(Date.now())
+    } else {
+      // Al pausar, resetear
+      setSessionStartTime(null)
+    }
     setIsActive(!isActive)
   }
 
   const resetTimer = () => {
     setIsActive(false)
+    setSessionStartTime(null)
     setSeconds(isBreak ? BREAK_TIME : WORK_TIME)
   }
 
@@ -108,14 +135,43 @@ export default function PomodoroTimer({ onSessionComplete }) {
     }
   }
 
-  const skipSession = () => {
+  const skipSession = async () => {
     setIsActive(false)
+    
     if (isBreak) {
       setIsBreak(false)
       setSeconds(WORK_TIME)
+      setSessionStartTime(null)
     } else {
-      // Contar como completada cuando se salta una sesión de trabajo
-      setSessionsCompleted((prev) => prev + 1)
+      // Guardar sesión en backend cuando se salta una sesión de trabajo
+      try {
+        // Calcular tiempo REAL que pasó
+        const timeElapsed = sessionStartTime ? Math.round((Date.now() - sessionStartTime) / 1000) : WORK_TIME
+        const durationMinutes = Math.max(1, Math.ceil(timeElapsed / 60)) // Mínimo 1 minuto
+        
+        const sessionData = {
+          duration_minutes: durationMinutes,
+          task_id: selectedTask?.id || null,
+          type: 'focus',
+          started_at: new Date(Date.now() - timeElapsed * 1000).toISOString(),
+          completed: false,
+        }
+        console.log('📤 Guardando sesión pomodoro (skip):', sessionData)
+        await productivityService.createPomodoroSession(sessionData)
+        console.log('✅ Sesión guardada exitosamente')
+        
+        // Solo incrementar sesiones completadas si se guardó correctamente
+        setSessionsCompleted((prev) => prev + 1)
+        if (onSessionComplete) {
+          onSessionComplete()
+        }
+      } catch (error) {
+        console.error('❌ Error guardando sesión:', error.message)
+        alert('⚠️ No se pudo guardar la sesión. Revisa la conexión con el servidor.')
+        return
+      }
+      
+      setSessionStartTime(null)
       setIsBreak(true)
       setSeconds(BREAK_TIME)
     }

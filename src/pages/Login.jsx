@@ -5,6 +5,7 @@ import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../context/AuthContext'
 import authService from '../services/authService'
 import ForgotPasswordModal from '../components/ForgotPasswordModal'
+import logo from '../assets/educonnect_logo.png'
 
 function Login() {
   const navigate = useNavigate()
@@ -104,9 +105,13 @@ function Login() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
-            className="text-2xl font-bold text-blue-900 dark:text-blue-400 hover:opacity-80 transition-opacity"
+            className="hover:opacity-80 transition-opacity flex-shrink-0"
           >
-            🎓 EduConnect
+            <img
+              src={logo}
+              alt="EduConnect"
+              className="h-10 w-auto"
+            />
           </button>
           <button
             onClick={toggleTheme}
