@@ -77,7 +77,6 @@ export default function PomodoroTimer({ onSessionComplete }) {
   }, [isActive, seconds, sessionStartTime])
 
   const handleSessionComplete = async () => {
-    console.log('🔔 handleSessionComplete iniciado', { isBreak, seconds })
     alert('✅ Sesión completada: ' + (isBreak ? 'Descanso' : 'Pomodoro'))
     
     // Reproducir sonido de notificación
