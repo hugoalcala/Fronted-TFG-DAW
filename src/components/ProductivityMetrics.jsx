@@ -145,31 +145,6 @@ export default function ProductivityMetrics({ refreshTrigger }) {
               )}
             </div>
           </div>
-
-          {/* Consejos de productividad */}
-          <div className="bg-amber-50 dark:bg-amber-900 p-6 rounded-lg border-l-4 border-amber-400">
-            <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-3">
-              💡 Consejos para mejorar
-            </h3>
-            <ul className="space-y-2 text-sm text-amber-800 dark:text-amber-200">
-              {metrics.completion_rate < 50 ? (
-                <li>• Tu tasa de completitud está baja. Intenta crear tareas más pequeñas.</li>
-              ) : (
-                <li>• ¡Excelente progreso! Sigue así.</li>
-              )}
-              {(metrics.focus_sessions || 0) < 5 ? (
-                <li>• Usa la técnica Pomodoro para aumentar tu enfoque.</li>
-              ) : (
-                <li>• Ya tienes {metrics.focus_sessions} sesiones Pomodoro esta semana. ¡Sigue avanzando!</li>
-              )}
-              {metrics.total_tasks > 20 ? (
-                <li>• Tienes muchas tareas. Considera priorizar las más importantes.</li>
-              ) : (
-                <li>• Mantén una lista de tareas equilibrada.</li>
-              )}
-            </ul>
-          </div>
-
           {/* Botón de actualizar */}
           <button
             onClick={loadMetrics}
