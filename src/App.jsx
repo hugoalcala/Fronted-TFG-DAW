@@ -13,6 +13,7 @@ import Profile from './pages/Profile'
 import Teachers from './pages/Teachers'
 import TeacherProfile from './pages/TeacherProfile'
 import Messages from './pages/Messages'
+import Productivity from './pages/Productivity'
 import AdminDashboard from './pages/AdminDashboard'
 
 // Google Client ID desde variables de entorno
@@ -182,6 +183,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Messages />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/productivity"
+                element={
+                  <ProtectedRoute>
+                    <Productivity />
                   </ProtectedRoute>
                 }
               />
