@@ -108,7 +108,7 @@ export const productivityService = {
       }
 
       const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: getAuthHeader(),
         credentials: 'include',
         body: JSON.stringify(updates),
