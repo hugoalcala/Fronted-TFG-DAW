@@ -2,10 +2,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('authToken')
-  return {
-    Authorization: `Bearer ${token}`,
+  const headers = {
     'Content-Type': 'application/json',
   }
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+  return headers
 }
 
 export const productivityService = {
@@ -98,20 +101,23 @@ export const productivityService = {
   // Auto-rellena completed_at al completar, lo borra al revertir
   async updateTask(taskId, updates) {
     try {
+      // Crear copia para no mutar el objeto original
+      const payload = { ...updates }
+      
       // Si se marca como completada, agregar timestamp si no existe
-      if (updates.completed === true && !updates.completed_at) {
-        updates.completed_at = new Date().toISOString()
+      if (payload.completed === true && !payload.completed_at) {
+        payload.completed_at = new Date().toISOString()
       }
       // Si se desmarca, remover completed_at
-      if (updates.completed === false) {
-        updates.completed_at = null
+      if (payload.completed === false) {
+        payload.completed_at = null
       }
 
       const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
         method: 'PUT',
         headers: getAuthHeader(),
         credentials: 'include',
-        body: JSON.stringify(updates),
+        body: JSON.stringify(payload),
       })
 
       if (response.status === 403) {

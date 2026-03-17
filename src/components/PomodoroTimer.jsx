@@ -12,6 +12,7 @@ export default function PomodoroTimer({ onSessionComplete }) {
   const [loading, setLoading] = useState(false)
   const audioRef = useRef(null)
   const [sessionStartTime, setSessionStartTime] = useState(null) // Rastrear cuándo inició realmente
+  const [accumulatedElapsed, setAccumulatedElapsed] = useState(0) // Tiempo acumulado en pausas
 
   const WORK_TIME = customWorkTime * 60
   const BREAK_TIME = 5 * 60
@@ -24,13 +25,15 @@ export default function PomodoroTimer({ onSessionComplete }) {
   }, [])
 
   const checkAndRequestNotificationPermission = async () => {
-    if ('Notification' in window) {
+    if (typeof Notification !== 'undefined' && 'permission' in Notification) {
       setNotificationPermission(Notification.permission)
       
       if (Notification.permission === 'default') {
         const permission = await Notification.requestPermission()
         setNotificationPermission(permission)
       }
+    } else {
+      setNotificationPermission('denied')
     }
   }
 
@@ -62,8 +65,10 @@ export default function PomodoroTimer({ onSessionComplete }) {
       }, 1000)
     } else if (seconds === 0 && isActive) {
       handleSessionComplete()
-    } else if (!isActive) {
-      // Resetear cuando se pausa
+    } else if (!isActive && sessionStartTime) {
+      // Acumular tiempo transcurrido al pausar
+      const elapsed = Math.round((Date.now() - sessionStartTime) / 1000)
+      setAccumulatedElapsed((prev) => prev + elapsed)
       setSessionStartTime(null)
     }
 
@@ -83,7 +88,9 @@ export default function PomodoroTimer({ onSessionComplete }) {
     // Guardar sesión en backend
     try {
       // Calcular tiempo REAL que pasó, no la duración configurada
-      const timeElapsed = sessionStartTime ? Math.round((Date.now() - sessionStartTime) / 1000) : (isBreak ? BREAK_TIME : WORK_TIME)
+      const timeElapsed = sessionStartTime 
+        ? Math.round((Date.now() - sessionStartTime) / 1000) + accumulatedElapsed
+        : accumulatedElapsed || (isBreak ? BREAK_TIME : WORK_TIME)
       const durationMinutes = Math.max(1, Math.ceil(timeElapsed / 60)) // Mínimo 1 minuto
       
       const sessionData = {
@@ -196,8 +203,8 @@ export default function PomodoroTimer({ onSessionComplete }) {
         try {
           new Notification('☕ Descanso saltado', {
             body: '¡Vaya! Saltaste tu descanso. Recuerda descansar regularmente.',
-            icon: '☕',
-            badge: '☕',
+            icon: '/educonnect_logo.png',
+            badge: '/educonnect_logo.png',
             tag: 'pomodoro-notification',
           })
         } catch (error) {
@@ -243,8 +250,8 @@ export default function PomodoroTimer({ onSessionComplete }) {
         try {
           new Notification('🍅 Sesión saltada', {
             body: 'Saltaste esta sesión, pero se registró igual. ¡Continúa con el siguiente descanso!',
-            icon: '🍅',
-            badge: '🍅',
+            icon: '/educonnect_logo.png',
+            badge: '/educonnect_logo.png',
             tag: 'pomodoro-notification',
           })
         } catch (error) {

@@ -55,7 +55,7 @@ export default function ProductivityMetrics({ refreshTrigger }) {
           onChange={(e) => setTimeFrame(e.target.value)}
           className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="day">Hoy</option>
+          <option value="today">Hoy</option>
           <option value="week">Esta semana</option>
           <option value="month">Este mes</option>
         </select>
@@ -98,13 +98,13 @@ export default function ProductivityMetrics({ refreshTrigger }) {
                 Tasa de Completitud
               </span>
               <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {metrics.completion_rate || 0}%
+                {Math.max(0, Math.min(100, metrics.completion_rate || 0))}%
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
               <div
                 className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${metrics.completion_rate || 0}%` }}
+                style={{ width: `${Math.max(0, Math.min(100, metrics.completion_rate || 0))}%` }}
               />
             </div>
           </div>
