@@ -25,6 +25,8 @@ export default function Profile() {
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [removeAvatar, setRemoveAvatar] = useState(false)
+  const [showConfirmNameChange, setShowConfirmNameChange] = useState(false)
+  const [pendingNameChange, setPendingNameChange] = useState(null)
   const modalRef = useRef(null)
   const firstInputRef = useRef(null)
   const previousFocusedElementRef = useRef(null)
@@ -223,6 +225,31 @@ export default function Profile() {
     if (normalizedName !== editData.name) {
       setEditData((prev) => ({ ...prev, name: normalizedName }))
     }
+
+    // Verificar si el nombre fue cambiado
+    const nameWasChanged = normalizedName !== (user?.name ?? '')
+    if (nameWasChanged) {
+      setPendingNameChange(normalizedName)
+      setShowConfirmNameChange(true)
+      return
+    }
+
+    // Si el nombre no cambió, continuar con el guardado normal
+    await performProfileSave(normalizedName)
+  }
+
+  const handleConfirmNameChange = async () => {
+    setShowConfirmNameChange(false)
+    await performProfileSave(pendingNameChange)
+    setPendingNameChange(null)
+  }
+
+  const handleCancelNameChange = () => {
+    setShowConfirmNameChange(false)
+    setPendingNameChange(null)
+  }
+
+  const performProfileSave = async (normalizedName) => {
 
     const previousUser = user
     const refreshCanonicalUser = async () => {
@@ -659,6 +686,47 @@ export default function Profile() {
                 </button>
                 <button
                   onClick={handleCloseEditModal}
+                  disabled={loadingEdit}
+                  className="flex-1 px-6 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmación de Cambio de Nombre */}
+        {showConfirmNameChange && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="confirm-name-change-title"
+              className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-sm w-full p-6 border border-gray-200 dark:border-gray-800"
+            >
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-yellow-100 dark:bg-yellow-900/30 rounded-full mb-4">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              
+              <h2 id="confirm-name-change-title" className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">
+                Confirmar cambio de nombre
+              </h2>
+              
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-4">
+                ¿Estás seguro de que quieres cambiar tu nombre de <span className="font-medium text-gray-900 dark:text-white">"{user?.name}"</span> a <span className="font-medium text-gray-900 dark:text-white">"{pendingNameChange}"</span>?
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleConfirmNameChange}
+                  disabled={loadingEdit}
+                  className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingEdit ? 'Guardando...' : 'Sí, cambiar nombre'}
+                </button>
+                <button
+                  onClick={handleCancelNameChange}
                   disabled={loadingEdit}
                   className="flex-1 px-6 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
                 >
