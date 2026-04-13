@@ -26,7 +26,7 @@ export default function TeacherProfile() {
   const [reviewText, setReviewText] = useState('')
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewError, setReviewError] = useState(null)
-  const [reviewSuccess, setReviewSuccess] = useState(false)
+  const [reviewSuccessType, setReviewSuccessType] = useState(null) // 'created' | 'edited' | 'deleted'
   const reviewSuccessTimerRef = useRef(null)
 
   // Estados para editar y eliminar reseñas
@@ -181,7 +181,7 @@ export default function TeacherProfile() {
       setTotalReviews(ratingsData?.total_count || 0)
 
       // Solo después de éxito, mostrar feedback y cerrar formulario
-      setReviewSuccess(true)
+      setReviewSuccessType('created')
       setReviewText('')
       setStudentRating(5)
       setShowReviewForm(false)
@@ -191,14 +191,12 @@ export default function TeacherProfile() {
         clearTimeout(reviewSuccessTimerRef.current)
       }
       // Crear nuevo timeout y guardar su ID
-      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccess(false), 3000)
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 3000)
     } catch (err) {
       console.error('Error creating review:', err)
       setReviewError(err.message || 'Error al enviar la reseña')
     } finally {
-      if (submittingReview) {
-        setSubmittingReview(false)
-      }
+      setSubmittingReview(false)
     }
   }
 
@@ -248,11 +246,11 @@ export default function TeacherProfile() {
       setEditingRatingId(null)
       setEditText('')
       setEditRating(5)
-      setReviewSuccess(true)
+      setReviewSuccessType('edited')
       if (reviewSuccessTimerRef.current) {
         clearTimeout(reviewSuccessTimerRef.current)
       }
-      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccess(false), 3000)
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 3000)
     } catch (err) {
       console.error('Error updating rating:', err)
       setEditError(err.message || 'Error al actualizar la reseña')
@@ -282,11 +280,11 @@ export default function TeacherProfile() {
       setAverageRating(ratingsData?.average || null)
       setTotalReviews(ratingsData?.total_count || 0)
 
-      setReviewSuccess(true)
+      setReviewSuccessType('deleted')
       if (reviewSuccessTimerRef.current) {
         clearTimeout(reviewSuccessTimerRef.current)
       }
-      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccess(false), 3000)
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 3000)
     } catch (err) {
       console.error('Error deleting rating:', err)
       setDeletingErrors(prev => ({
@@ -363,9 +361,14 @@ export default function TeacherProfile() {
         </button>
 
         {/* Notificaciones */}
-        {reviewSuccess && (
+        {reviewSuccessType && (
           <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 rounded-lg">
-            ✅ ¡Reseña enviada con éxito!
+            ✅ {
+              reviewSuccessType === 'created' ? '¡Reseña enviada con éxito!' :
+              reviewSuccessType === 'edited' ? '¡Reseña actualizada con éxito!' :
+              reviewSuccessType === 'deleted' ? '¡Reseña eliminada con éxito!' :
+              '¡Operación completada!'
+            }
           </div>
         )}
 
@@ -609,7 +612,9 @@ export default function TeacherProfile() {
                                 key={i}
                                 type="button"
                                 onClick={() => setEditRating(i)}
-                                className={`text-3xl transition-transform hover:scale-110 ${
+                                aria-label={`Estrella ${i} de 5`}
+                                aria-pressed={i <= editRating}
+                                className={`text-3xl transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-yellow-400 rounded ${
                                   i <= editRating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'
                                 }`}
                               >
@@ -727,7 +732,7 @@ export default function TeacherProfile() {
 
                       {/* Botones de acción - Solo si es el autor */}
                       {user?.id === rating.student_id && (
-                        <div className="flex gap-3 opacity-0 sm:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex gap-3 opacity-100 sm:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pt-2 border-t border-gray-200 dark:border-gray-700">
                           <button
                             onClick={() => handleEditRating(rating)}
                             className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
