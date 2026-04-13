@@ -29,6 +29,15 @@ export default function TeacherProfile() {
   const [reviewSuccess, setReviewSuccess] = useState(false)
   const reviewSuccessTimerRef = useRef(null)
 
+  // Estados para editar y eliminar reseñas
+  const [editingRatingId, setEditingRatingId] = useState(null)
+  const [editText, setEditText] = useState('')
+  const [editRating, setEditRating] = useState(5)
+  const [submittingEdit, setSubmittingEdit] = useState(false)
+  const [editError, setEditError] = useState(null)
+  const [deletingRatingId, setDeletingRatingId] = useState(null)
+  const [deletingError, setDeletingError] = useState(null)
+
   // Cargar datos del profesor
   useEffect(() => {
     const loadTeacherData = async () => {
@@ -144,19 +153,26 @@ export default function TeacherProfile() {
     // Guardia temprana para evitar duplicados
     if (submittingReview) return
     
-    if (!reviewText.trim()) {
-      setReviewError('La reseña no puede estar vacía')
+    // Validar que haya estrellas seleccionadas
+    if (!studentRating || studentRating < 1) {
+      setReviewError('Por favor selecciona una calificación de estrellas')
       return
+    }
+
+    // El comentario es opcional, pero si lo hay, se incluye
+    const reviewPayload = {
+      rating: studentRating,
+    }
+    
+    if (reviewText.trim()) {
+      reviewPayload.review = reviewText.trim()
     }
 
     setSubmittingReview(true)
     setReviewError(null)
 
     try {
-      await ratingsService.createRating(teacherId, {
-        rating: studentRating,
-        review: reviewText.trim(),
-      })
+      await ratingsService.createRating(teacherId, reviewPayload)
 
       // Recargar ratings primero
       const ratingsData = await ratingsService.getTeacherRatings(teacherId)
@@ -183,6 +199,95 @@ export default function TeacherProfile() {
       if (submittingReview) {
         setSubmittingReview(false)
       }
+    }
+  }
+
+  const handleEditRating = (rating) => {
+    setEditingRatingId(rating.id)
+    setEditText(rating.review || '')
+    setEditRating(rating.rating || 5)
+    setEditError(null)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingRatingId(null)
+    setEditText('')
+    setEditRating(5)
+    setEditError(null)
+  }
+
+  const handleUpdateRating = async (ratingId) => {
+    if (submittingEdit) return
+
+    // Validar que haya estrellas
+    if (!editRating || editRating < 1) {
+      setEditError('Por favor selecciona una calificación de estrellas')
+      return
+    }
+
+    const updatePayload = {
+      rating: editRating,
+    }
+
+    if (editText.trim()) {
+      updatePayload.review = editText.trim()
+    }
+
+    setSubmittingEdit(true)
+    setEditError(null)
+
+    try {
+      await ratingsService.updateRating(teacherId, ratingId, updatePayload)
+
+      // Recargar ratings
+      const ratingsData = await ratingsService.getTeacherRatings(teacherId)
+      setRatings(ratingsData?.ratings || [])
+      setAverageRating(ratingsData?.average || null)
+      setTotalReviews(ratingsData?.total_count || 0)
+
+      setEditingRatingId(null)
+      setEditText('')
+      setEditRating(5)
+      setReviewSuccess(true)
+      if (reviewSuccessTimerRef.current) {
+        clearTimeout(reviewSuccessTimerRef.current)
+      }
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccess(false), 3000)
+    } catch (err) {
+      console.error('Error updating rating:', err)
+      setEditError(err.message || 'Error al actualizar la reseña')
+    } finally {
+      setSubmittingEdit(false)
+    }
+  }
+
+  const handleDeleteRating = async (ratingId) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta reseña?')) {
+      return
+    }
+
+    setDeletingRatingId(ratingId)
+    setDeletingError(null)
+
+    try {
+      await ratingsService.deleteRating(teacherId, ratingId)
+
+      // Recargar ratings
+      const ratingsData = await ratingsService.getTeacherRatings(teacherId)
+      setRatings(ratingsData?.ratings || [])
+      setAverageRating(ratingsData?.average || null)
+      setTotalReviews(ratingsData?.total_count || 0)
+
+      setReviewSuccess(true)
+      if (reviewSuccessTimerRef.current) {
+        clearTimeout(reviewSuccessTimerRef.current)
+      }
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccess(false), 3000)
+    } catch (err) {
+      console.error('Error deleting rating:', err)
+      setDeletingError(err.message || 'Error al eliminar la reseña')
+    } finally {
+      setDeletingRatingId(null)
     }
   }
 
@@ -380,38 +485,54 @@ export default function TeacherProfile() {
 
             <form onSubmit={handleSubmitReview}>
               {/* Rating */}
-              <div className="mb-6">
+              <div className="mb-8">
                 <label 
                   id="rating-label"
-                  className="block text-sm font-medium text-gray-900 dark:text-white mb-3"
+                  className="block text-lg font-semibold text-gray-900 dark:text-white mb-4"
                 >
-                  Calificación
+                  Tu calificación <span className="text-red-500">*</span>
                 </label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Haz clic en una estrella para calificar (el comentario es opcional)
+                </p>
                 <div 
-                  className="flex gap-2"
+                  className="flex gap-3 mb-2"
                   role="radiogroup"
                   aria-labelledby="rating-label"
                 >
                   {renderStars(studentRating)}
                 </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Calificación seleccionada: <strong>{studentRating} {studentRating === 1 ? 'estrella' : 'estrellas'}</strong>
+                </p>
               </div>
 
               {/* Texto de la reseña */}
-              <div className="mb-6">
+              <div className="mb-8">
                 <label 
                   htmlFor="review-text"
                   className="block text-sm font-medium text-gray-900 dark:text-white mb-3"
                 >
-                  Tu reseña
+                  Agrega un comentario <span className="text-gray-500 dark:text-gray-400 font-normal text-xs">(completamente opcional)</span>
                 </label>
                 <textarea
                   id="review-text"
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
-                  placeholder="Comparte tu experiencia con este profesor..."
+                  placeholder="Cuéntale a otros estudiantes tu experiencia con este profesor..."
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
-                  rows="5"
+                  rows="4"
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  {reviewText.length} caracteres
+                </p>
+              </div>
+
+              {/* Info de envío */}
+              <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm text-blue-900 dark:text-blue-200">
+                  💡 Puedes enviar solo tu calificación de estrellas sin escribir comentarios
+                </p>
               </div>
 
               {/* Botones */}
@@ -442,56 +563,198 @@ export default function TeacherProfile() {
 
         {/* Reseñas */}
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Reseñas ({totalReviews})
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+            Reseñas
           </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            {totalReviews} {totalReviews === 1 ? 'reseña' : 'reseñas'} de estudiantes
+          </p>
 
           {ratings.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {ratings.map((rating) => (
                 <div
                   key={rating.id}
-                  className="pb-6 border-b border-gray-200 dark:border-gray-800 last:border-b-0"
+                  className="group bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-blue-900/20 transition-all duration-200"
                 >
-                  {/* Cabecera de la reseña */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {rating.student_name || 'Estudiante anónimo'}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {rating.created_at
-                          ? new Date(rating.created_at).toLocaleDateString('es-ES')
-                          : 'Recientemente'}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <span
-                          key={i}
-                          className={`text-lg ${
-                            i < (rating.rating || 0)
-                              ? 'text-yellow-400'
-                              : 'text-gray-300'
-                          }`}
-                        >
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Editando reseña */}
+                  {editingRatingId === rating.id ? (
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          <span className="text-xl">✏️</span> Editar reseña
+                        </h4>
 
-                  {/* Texto de la reseña */}
-                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {rating.review || 'Sin comentarios'}
-                  </p>
+                        {editError && (
+                          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg border border-red-200 dark:border-red-800 text-sm">
+                            ⚠️ {editError}
+                          </div>
+                        )}
+
+                        {/* Rating */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Tu calificación
+                          </label>
+                          <div className="flex gap-2">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => setEditRating(i)}
+                                className={`text-3xl transition-transform hover:scale-110 ${
+                                  i <= editRating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'
+                                }`}
+                              >
+                                ★
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Comentario */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Comentario
+                          </label>
+                          <textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            placeholder="Comparte detalles sobre tu experiencia..."
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            rows="3"
+                          />
+                        </div>
+
+                        {/* Botones */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleUpdateRating(rating.id)}
+                            disabled={submittingEdit}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                          >
+                            {submittingEdit ? '⏳ Guardando...' : '💾 Guardar cambios'}
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            disabled={submittingEdit}
+                            className="px-4 py-2 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg transition-colors text-sm font-medium"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Cabecera */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-start gap-4 flex-1">
+                          {/* Avatar */}
+                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0 overflow-hidden border-3 border-blue-200 dark:border-blue-800 shadow-md">
+                            {rating.student_avatar_url ? (
+                              <img
+                                src={rating.student_avatar_url}
+                                alt={rating.student_name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none'
+                                }}
+                              />
+                            ) : (
+                              <span>{(rating.student_name || 'E').charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+
+                          {/* Info del estudiante */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-gray-900 dark:text-white text-base">
+                              {rating.student_name || 'Estudiante anónimo'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              📅 {rating.created_at
+                                ? new Date(rating.created_at).toLocaleDateString('es-ES', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })
+                                : 'Recientemente'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Rating */}
+                        <div className="flex gap-0.5 flex-shrink-0">
+                          {[...Array(5)].map((_, i) => (
+                            <span
+                              key={i}
+                              className={`text-xl transition-transform ${
+                                i < (rating.rating || 0)
+                                  ? 'text-yellow-400 drop-shadow-sm'
+                                  : 'text-gray-300 dark:text-gray-600'
+                              }`}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Rating numérico */}
+                      <div className="mb-4 inline-block bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1 rounded-full border border-yellow-200 dark:border-yellow-800">
+                        <span className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                          {rating.rating}/5
+                        </span>
+                      </div>
+
+                      {/* Texto de la reseña */}
+                      <div className="mb-4">
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {rating.review ? (
+                            <span className="italic">{rating.review}</span>
+                          ) : (
+                            <span className="text-gray-500 dark:text-gray-400">Sin comentarios adicionales</span>
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Botones de acción - Solo si es el autor */}
+                      {user?.id === rating.student_id && (
+                        <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pt-2 border-t border-gray-200 dark:border-gray-700">
+                          <button
+                            onClick={() => handleEditRating(rating)}
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200 hover:scale-105"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRating(rating.id)}
+                            disabled={deletingRatingId === rating.id}
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {deletingRatingId === rating.id ? '⏳ Eliminando...' : '🗑️ Eliminar'}
+                          </button>
+                        </div>
+                      )}
+
+                      {deletingError && (
+                        <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-sm border border-red-200 dark:border-red-800">
+                          ⚠️ {deletingError}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
-                Aún no hay reseñas. ¡Sé el primero en dejar una!
+            <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700">
+              <p className="text-5xl mb-3">⭐</p>
+              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">
+                Aún no hay reseñas
+              </p>
+              <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">
+                Sé el primero en dejar una reseña sobre este profesor
               </p>
             </div>
           )}

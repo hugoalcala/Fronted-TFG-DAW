@@ -83,4 +83,60 @@ export const ratingsService = {
       throw error
     }
   },
+
+  // Actualizar una reseña existente
+  async updateRating(teacherId, ratingId, ratingData) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/teachers/${teacherId}/ratings/${ratingId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(ratingData),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to update rating')
+      }
+
+      const data = await response.json()
+      return data.data || data
+    } catch (error) {
+      console.error('❌ Error updating rating:', error)
+      throw error
+    }
+  },
+
+  // Eliminar una reseña
+  async deleteRating(teacherId, ratingId) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/teachers/${teacherId}/ratings/${ratingId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Accept': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to delete rating')
+      }
+
+      const data = await response.json()
+      return data.data || data
+    } catch (error) {
+      console.error('❌ Error deleting rating:', error)
+      throw error
+    }
+  },
 }
