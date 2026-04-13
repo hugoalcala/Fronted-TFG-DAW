@@ -36,7 +36,7 @@ export default function TeacherProfile() {
   const [submittingEdit, setSubmittingEdit] = useState(false)
   const [editError, setEditError] = useState(null)
   const [deletingRatingId, setDeletingRatingId] = useState(null)
-  const [deletingError, setDeletingError] = useState(null)
+  const [deletingErrors, setDeletingErrors] = useState({})
 
   // Cargar datos del profesor
   useEffect(() => {
@@ -267,7 +267,11 @@ export default function TeacherProfile() {
     }
 
     setDeletingRatingId(ratingId)
-    setDeletingError(null)
+    setDeletingErrors(prev => {
+      const newErrors = { ...prev }
+      delete newErrors[ratingId]
+      return newErrors
+    })
 
     try {
       await ratingsService.deleteRating(teacherId, ratingId)
@@ -285,7 +289,10 @@ export default function TeacherProfile() {
       reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccess(false), 3000)
     } catch (err) {
       console.error('Error deleting rating:', err)
-      setDeletingError(err.message || 'Error al eliminar la reseña')
+      setDeletingErrors(prev => ({
+        ...prev,
+        [ratingId]: err.message || 'Error al eliminar la reseña'
+      }))
     } finally {
       setDeletingRatingId(null)
     }
@@ -720,26 +727,26 @@ export default function TeacherProfile() {
 
                       {/* Botones de acción - Solo si es el autor */}
                       {user?.id === rating.student_id && (
-                        <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex gap-3 opacity-0 sm:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pt-2 border-t border-gray-200 dark:border-gray-700">
                           <button
                             onClick={() => handleEditRating(rating)}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200 hover:scale-105"
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                           >
                             ✏️ Editar
                           </button>
                           <button
                             onClick={() => handleDeleteRating(rating.id)}
                             disabled={deletingRatingId === rating.id}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                           >
                             {deletingRatingId === rating.id ? '⏳ Eliminando...' : '🗑️ Eliminar'}
                           </button>
                         </div>
                       )}
 
-                      {deletingError && (
+                      {deletingErrors[rating.id] && (
                         <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-sm border border-red-200 dark:border-red-800">
-                          ⚠️ {deletingError}
+                          ⚠️ {deletingErrors[rating.id]}
                         </div>
                       )}
                     </>

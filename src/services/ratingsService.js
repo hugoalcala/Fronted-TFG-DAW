@@ -1,5 +1,28 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
+// Helper para parsear JSON de forma segura
+const safeParseJSON = async (response) => {
+  const contentLength = response.headers.get('content-length')
+  const contentType = response.headers.get('content-type')
+  
+  // Si el servidor retorna 204 No Content o sin body, retorna null
+  if (response.status === 204 || contentLength === '0') {
+    return null
+  }
+  
+  // Si no hay content-type JSON, retorna null
+  if (!contentType?.includes('application/json')) {
+    return null
+  }
+  
+  try {
+    return await response.json()
+  } catch (error) {
+    console.warn('⚠️ Failed to parse JSON response:', error)
+    return null
+  }
+}
+
 export const ratingsService = {
   // Obtener ratings y reseñas de un profesor
   async getTeacherRatings(teacherId) {
@@ -101,12 +124,12 @@ export const ratingsService = {
       )
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to update rating')
+        const errorData = await safeParseJSON(response)
+        throw new Error(errorData?.message || 'Failed to update rating')
       }
 
-      const data = await response.json()
-      return data.data || data
+      const data = await safeParseJSON(response)
+      return data?.data || data || { success: true }
     } catch (error) {
       console.error('❌ Error updating rating:', error)
       throw error
@@ -128,12 +151,12 @@ export const ratingsService = {
       )
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to delete rating')
+        const errorData = await safeParseJSON(response)
+        throw new Error(errorData?.message || 'Failed to delete rating')
       }
 
-      const data = await response.json()
-      return data.data || data
+      const data = await safeParseJSON(response)
+      return data?.data || data || { success: true }
     } catch (error) {
       console.error('❌ Error deleting rating:', error)
       throw error
