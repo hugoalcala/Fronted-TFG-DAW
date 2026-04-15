@@ -30,6 +30,8 @@ function Dashboard() {
   const [editLoading, setEditLoading] = useState(false)
   const [deletingPostId, setDeletingPostId] = useState(null)
   const [openMenuPostId, setOpenMenuPostId] = useState(null)
+  const [userLikes, setUserLikes] = useState(new Set()) // Posts que el usuario ya le dio like
+  const [liking, setLiking] = useState(null) // Post que se está procesando like
   const menuTimerRef = useRef(null)
   const fileInputRef = useRef(null)
   const editFileInputRef = useRef(null)
@@ -56,51 +58,49 @@ function Dashboard() {
       
       try {
         setPostsLoading(true)
-        const data = await postsService.getFeed()
         
-        if (Array.isArray(data)) {
-          setPosts(data)
-        } else if (data && data.data) {
-          setPosts(data.data)
-        } else {
-          // Usar mock data si el backend no responde
-          setPosts([
-            {
-              id: 1,
-              author: 'Dr. Juan García',
-              avatar: '👨‍🏫',
-              subject: 'Matemáticas',
-              title: '10 trucos para dominar el cálculo',
-              content: 'Hoy comparto los mejores métodos que he aprendido en 15 años enseñando cálculo. Estos trucos te ayudarán a entender los conceptos de forma más rápida...',
-              timestamp: 'hace 2 horas',
-              likes: 24,
-              comments: 5,
-              image: '📐'
-            },
-            {
-              id: 2,
-              author: 'Ing. María López',
-              avatar: '👩‍💼',
-              subject: 'Programación',
-              title: 'Introducción a React Hooks',
-              content: 'Los hooks de React revolucionaron la forma en que escribimos componentes. En este post te explico cómo funcionan y cuándo usarlos...',
-              timestamp: 'hace 4 horas',
-              likes: 45,
-              comments: 12,
-              image: '⚛️'
-            },
-          ])
+        // Cargar posts
+        const postsData = await postsService.getFeed()
+        
+        // Procesar posts
+        let posts = []
+        if (Array.isArray(postsData)) {
+          posts = postsData
+        } else if (postsData && postsData.data) {
+          posts = postsData.data
         }
+        
+        console.log('✅ Posts cargados:', posts.length, posts)
+        setPosts(posts)
+        
+        // Cargar likes DESPUÉS de que los posts estén listos
+        const likedPostIds = await postsService.getUserLikedPosts()
+        console.log('📥 Raw liked IDs from server:', likedPostIds)
+        
+        // Convertir IDs a números
+        const normalizedLikedIds = (likedPostIds || []).map(id => Number(id))
+        console.log('✅ Normalized liked IDs:', normalizedLikedIds)
+        
+        const likesSet = new Set(normalizedLikedIds)
+        console.log('✅ Setting userLikes Set:', Array.from(likesSet))
+        setUserLikes(likesSet)
+        
       } catch (error) {
-        console.error('Error loading posts:', error)
-        // Mantener posts vacío o usar mock data
+        console.error('❌ Error loading posts:', error)
+        setPosts([])
+        setUserLikes(new Set())
       } finally {
         setPostsLoading(false)
       }
     }
 
     loadPosts()
-  }, [isAuthenticated])
+  }, [isAuthenticated, user?.id])
+
+  // Monitor userLikes changes
+  useEffect(() => {
+    console.log('🔍 userLikes updated:', Array.from(userLikes))
+  }, [userLikes])
 
   // Determinar tipo de archivo y obtener icono
   const getFileInfo = (file) => {
@@ -257,18 +257,70 @@ function Dashboard() {
     }
   }
 
-  // Like a un post
+  // Like o Unlike a un post (toggle)
   const handleLikePost = async (postId) => {
     try {
-      await postsService.likePost(postId)
-      // Actualizar el estado local
-      setPosts(posts.map(post => 
-        post.id === postId ? { ...post, likes: (post.likes || 0) + 1 } : post
-      ))
+      const numPostId = Number(postId)
+      setLiking(numPostId)
+      const isLiked = userLikes.has(numPostId)
+      
+      console.log(`👍 Post ${numPostId}: ${isLiked ? 'quitando like' : 'dando like'}`)
+      console.log('userLikes antes:', Array.from(userLikes))
+      
+      if (isLiked) {
+        // Quitar like
+        await postsService.unlikePost(numPostId)
+        console.log(`✅ Like removido del post ${numPostId}`)
+        
+        // Actualizar estado
+        const newLikes = new Set(userLikes)
+        newLikes.delete(numPostId)
+        setUserLikes(newLikes)
+        console.log('userLikes después (unlike):', Array.from(newLikes))
+        
+        // Actualizar contador del post
+        setPosts(prevPosts =>
+          prevPosts.map(post => 
+            post.id === numPostId 
+              ? { ...post, likes_count: Math.max(0, (post.likes_count || 1) - 1) } 
+              : post
+          )
+        )
+      } else {
+        // Dar like
+        await postsService.likePost(numPostId)
+        console.log(`✅ Like agregado al post ${numPostId}`)
+        
+        // Actualizar estado
+        const newLikes = new Set(userLikes)
+        newLikes.add(numPostId)
+        setUserLikes(newLikes)
+        console.log('userLikes después (like):', Array.from(newLikes))
+        
+        // Actualizar contador del post
+        setPosts(prevPosts =>
+          prevPosts.map(post => 
+            post.id === numPostId 
+              ? { ...post, likes_count: (post.likes_count || 0) + 1 } 
+              : post
+          )
+        )
+      }
     } catch (error) {
-      console.error('Error liking post:', error)
+      console.error('❌ Error toggling like:', error)
+      // Recargar likes desde el servidor en caso de error
+      postsService.getUserLikedPosts().then(likedPostIds => {
+        const normalizedIds = (likedPostIds || []).map(id => Number(id))
+        console.log('Sincronizando likes desde servidor:', normalizedIds)
+        setUserLikes(new Set(normalizedIds))
+      })
+    } finally {
+      setLiking(null)
     }
   }
+
+
+
 
   // Abrir modal de edición
   const handleEditPost = (post) => {
@@ -602,17 +654,32 @@ function Dashboard() {
                   </div>
 
                   {/* Post Footer */}
-                  <div className="flex items-center justify-around pt-4 border-t border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400">
-                    <button 
-                      onClick={() => handleLikePost(post.id)}
-                      className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                    >
-                      👍 {post.likes || 0}
+                  <div className="flex items-center justify-around pt-4 border-t border-gray-200 dark:border-gray-800">
+                    {(() => {
+                      const postIdNum = Number(post.id)
+                      const isLiked = userLikes.has(postIdNum)
+                      console.log(`Post ${postIdNum}: liked=${isLiked}, allLikes=[${Array.from(userLikes)}]`)
+                      return (
+                        <button 
+                          onClick={() => handleLikePost(postIdNum)}
+                          disabled={liking === postIdNum}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all transform ${
+                            isLiked
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 scale-105 shadow-md'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                          } ${liking === postIdNum ? 'opacity-50 cursor-not-allowed scale-100' : 'hover:scale-105'}`}
+                        >
+                          <span className={`text-lg ${isLiked ? 'animate-pulse' : ''}`}>
+                            {isLiked ? '❤️' : '🤍'}
+                          </span>
+                          {post.likes_count || 0}
+                        </button>
+                      )
+                    })()}
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-semibold">
+                      💬 {post.comments_count || 0}
                     </button>
-                    <button className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                      💬 {post.comments || 0}
-                    </button>
-                    <button className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-semibold">
                       📤 Compartir
                     </button>
                   </div>

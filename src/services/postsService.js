@@ -66,6 +66,7 @@ export const postsService = {
   // Like a un post
   async likePost(postId) {
     try {
+      console.log(`👍 Sending like request to /posts/${postId}/like`)
       const response = await fetch(
         `${API_BASE_URL}/posts/${postId}/like`,
         {
@@ -73,19 +74,23 @@ export const postsService = {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
           },
         }
       )
 
+      const data = await response.json()
+      console.log(`Response status: ${response.status}`, data)
+
       if (!response.ok) {
-        throw new Error('Failed to like post')
+        throw new Error(data.message || `Failed to like post: ${response.status}`)
       }
 
-      const data = await response.json()
+      console.log('✅ Like successful:', data)
       return data
 
     } catch (error) {
-      console.error('❌ Error liking post:', error)
+      console.error('❌ Error liking post:', error.message)
       throw error
     }
   },
@@ -93,6 +98,7 @@ export const postsService = {
   // Unlike a un post
   async unlikePost(postId) {
     try {
+      console.log(`👎 Sending unlike request to /posts/${postId}/unlike`)
       const response = await fetch(
         `${API_BASE_URL}/posts/${postId}/unlike`,
         {
@@ -100,19 +106,23 @@ export const postsService = {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
           },
         }
       )
 
+      const data = await response.json()
+      console.log(`Response status: ${response.status}`, data)
+
       if (!response.ok) {
-        throw new Error('Failed to unlike post')
+        throw new Error(data.message || `Failed to unlike post: ${response.status}`)
       }
 
-      const data = await response.json()
+      console.log('✅ Unlike successful:', data)
       return data
 
     } catch (error) {
-      console.error('❌ Error unliking post:', error)
+      console.error('❌ Error unliking post:', error.message)
       throw error
     }
   },
@@ -235,6 +245,35 @@ export const postsService = {
     } catch (error) {
       console.error('❌ Error deleting post:', error)
       throw error
+    }
+  },
+
+  // Obtener IDs de posts que el usuario ya le dio like
+  async getUserLikedPosts() {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/user/liked-posts`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Accept': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        console.warn('Failed to fetch liked posts:', response.status)
+        return []
+      }
+
+      const data = await response.json()
+      console.log('❤️ Backend returned liked posts:', data.data)
+      return Array.isArray(data.data) ? data.data : []
+
+    } catch (error) {
+      console.error('❌ Error fetching liked posts:', error)
+      return []
     }
   },
 }
