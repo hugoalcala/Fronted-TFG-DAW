@@ -37,6 +37,13 @@ export default function TeacherProfile() {
   const [editError, setEditError] = useState(null)
   const [deletingRatingId, setDeletingRatingId] = useState(null)
   const [deletingErrors, setDeletingErrors] = useState({})
+  const [openMenuRatingId, setOpenMenuRatingId] = useState(null)
+  const [reportingRatingId, setReportingRatingId] = useState(null)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+  const [reportDetails, setReportDetails] = useState('')
+  const [submittingReport, setSubmittingReport] = useState(false)
+  const [reportError, setReportError] = useState(null)
 
   // Cargar datos del profesor
   useEffect(() => {
@@ -99,9 +106,15 @@ export default function TeacherProfile() {
 
         const normalizedTeacher = normalizeTeacher(teacherData)
         setTeacher(normalizedTeacher)
-        setRatings(ratingsData?.ratings || [])
-        setAverageRating(ratingsData?.average || null)
-        setTotalReviews(ratingsData?.total_count || 0)
+        
+        // Procesar ratings - puede ser array directo o objeto con propiedades
+        const ratingsArray = Array.isArray(ratingsData) ? ratingsData : (ratingsData?.ratings || [])
+        const average = typeof ratingsData?.average === 'number' ? ratingsData.average : null
+        const totalCount = typeof ratingsData?.total_count === 'number' ? ratingsData.total_count : ratingsArray.length
+        
+        setRatings(ratingsArray)
+        setAverageRating(average)
+        setTotalReviews(totalCount)
       } catch (err) {
         console.error('❌ Error loading teacher:', err)
         if (currentRequestId === requestIdRef.current) {
@@ -176,9 +189,13 @@ export default function TeacherProfile() {
 
       // Recargar ratings primero
       const ratingsData = await ratingsService.getTeacherRatings(teacherId)
-      setRatings(ratingsData?.ratings || [])
-      setAverageRating(ratingsData?.average || null)
-      setTotalReviews(ratingsData?.total_count || 0)
+      const ratingsArray = Array.isArray(ratingsData) ? ratingsData : (ratingsData?.ratings || [])
+      const average = typeof ratingsData?.average === 'number' ? ratingsData.average : null
+      const totalCount = typeof ratingsData?.total_count === 'number' ? ratingsData.total_count : ratingsArray.length
+      
+      setRatings(ratingsArray)
+      setAverageRating(average)
+      setTotalReviews(totalCount)
 
       // Solo después de éxito, mostrar feedback y cerrar formulario
       setReviewSuccessType('created')
@@ -191,7 +208,7 @@ export default function TeacherProfile() {
         clearTimeout(reviewSuccessTimerRef.current)
       }
       // Crear nuevo timeout y guardar su ID
-      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 3000)
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 5000)
     } catch (err) {
       console.error('Error creating review:', err)
       setReviewError(err.message || 'Error al enviar la reseña')
@@ -239,9 +256,13 @@ export default function TeacherProfile() {
 
       // Recargar ratings
       const ratingsData = await ratingsService.getTeacherRatings(teacherId)
-      setRatings(ratingsData?.ratings || [])
-      setAverageRating(ratingsData?.average || null)
-      setTotalReviews(ratingsData?.total_count || 0)
+      const ratingsArray = Array.isArray(ratingsData) ? ratingsData : (ratingsData?.ratings || [])
+      const average = typeof ratingsData?.average === 'number' ? ratingsData.average : null
+      const totalCount = typeof ratingsData?.total_count === 'number' ? ratingsData.total_count : ratingsArray.length
+      
+      setRatings(ratingsArray)
+      setAverageRating(average)
+      setTotalReviews(totalCount)
 
       setEditingRatingId(null)
       setEditText('')
@@ -250,7 +271,7 @@ export default function TeacherProfile() {
       if (reviewSuccessTimerRef.current) {
         clearTimeout(reviewSuccessTimerRef.current)
       }
-      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 3000)
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 5000)
     } catch (err) {
       console.error('Error updating rating:', err)
       setEditError(err.message || 'Error al actualizar la reseña')
@@ -265,6 +286,7 @@ export default function TeacherProfile() {
     }
 
     setDeletingRatingId(ratingId)
+    setOpenMenuRatingId(null)
     setDeletingErrors(prev => {
       const newErrors = { ...prev }
       delete newErrors[ratingId]
@@ -276,15 +298,19 @@ export default function TeacherProfile() {
 
       // Recargar ratings
       const ratingsData = await ratingsService.getTeacherRatings(teacherId)
-      setRatings(ratingsData?.ratings || [])
-      setAverageRating(ratingsData?.average || null)
-      setTotalReviews(ratingsData?.total_count || 0)
+      const ratingsArray = Array.isArray(ratingsData) ? ratingsData : (ratingsData?.ratings || [])
+      const average = typeof ratingsData?.average === 'number' ? ratingsData.average : null
+      const totalCount = typeof ratingsData?.total_count === 'number' ? ratingsData.total_count : ratingsArray.length
+      
+      setRatings(ratingsArray)
+      setAverageRating(average)
+      setTotalReviews(totalCount)
 
       setReviewSuccessType('deleted')
       if (reviewSuccessTimerRef.current) {
         clearTimeout(reviewSuccessTimerRef.current)
       }
-      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 3000)
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 5000)
     } catch (err) {
       console.error('Error deleting rating:', err)
       setDeletingErrors(prev => ({
@@ -294,6 +320,64 @@ export default function TeacherProfile() {
     } finally {
       setDeletingRatingId(null)
     }
+  }
+
+  const handleReportRating = (ratingId) => {
+    setReportingRatingId(ratingId)
+    setOpenMenuRatingId(null)
+    setShowReportModal(true)
+    setReportReason('')
+    setReportDetails('')
+    setReportError(null)
+  }
+
+  const handleSubmitReport = async () => {
+    if (!reportReason.trim()) {
+      setReportError('Por favor selecciona una razón para la denuncia')
+      return
+    }
+
+    setSubmittingReport(true)
+    setReportError(null)
+
+    try {
+      await ratingsService.reportRating(teacherId, reportingRatingId, {
+        reason: reportReason,
+        details: reportDetails.trim(),
+      })
+
+      // Mostrar éxito y cerrar modal
+      setReviewSuccessType('reported')
+      if (reviewSuccessTimerRef.current) {
+        clearTimeout(reviewSuccessTimerRef.current)
+      }
+      reviewSuccessTimerRef.current = setTimeout(() => setReviewSuccessType(null), 5000)
+      
+      setShowReportModal(false)
+      setReportingRatingId(null)
+    } catch (err) {
+      console.error('Error reporting rating:', err)
+      setReportError(err.message || 'Error al enviar la denuncia')
+    } finally {
+      setSubmittingReport(false)
+    }
+  }
+
+  const handleCancelReport = () => {
+    setShowReportModal(false)
+    setReportingRatingId(null)
+    setReportReason('')
+    setReportDetails('')
+    setReportError(null)
+  }
+
+  const handleOpenReportMenu = (ratingId) => {
+    setReportingRatingId(ratingId)
+    setOpenMenuRatingId(null)
+    setShowReportModal(true)
+    setReportReason('')
+    setReportDetails('')
+    setReportError(null)
   }
 
   const handleContactTeacher = async () => {
@@ -360,15 +444,125 @@ export default function TeacherProfile() {
           ← Volver a profesores
         </button>
 
-        {/* Notificaciones */}
+        {/* Notificaciones - Toast Flotante */}
         {reviewSuccessType && (
-          <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 rounded-lg">
-            ✅ {
-              reviewSuccessType === 'created' ? '¡Reseña enviada con éxito!' :
-              reviewSuccessType === 'edited' ? '¡Reseña actualizada con éxito!' :
-              reviewSuccessType === 'deleted' ? '¡Reseña eliminada con éxito!' :
-              '¡Operación completada!'
-            }
+          <div className={`fixed top-4 right-4 z-50 animate-bounce max-w-sm ${
+            reviewSuccessType === 'reported'
+              ? 'bg-gradient-to-r from-orange-400 to-orange-600'
+              : 'bg-gradient-to-r from-green-400 to-green-600'
+          } text-white p-4 rounded-xl shadow-2xl border-2 ${
+            reviewSuccessType === 'reported'
+              ? 'border-orange-200'
+              : 'border-green-200'
+          }`}>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">
+                {reviewSuccessType === 'reported' ? '🚩' : '✅'}
+              </span>
+              <div>
+                <p className="font-bold text-lg">
+                  {reviewSuccessType === 'created' && '¡Reseña enviada!'}
+                  {reviewSuccessType === 'edited' && '¡Reseña actualizada!'}
+                  {reviewSuccessType === 'deleted' && '¡Reseña eliminada!'}
+                  {reviewSuccessType === 'reported' && '¡Denuncia enviada!'}
+                </p>
+                <p className="text-sm opacity-90">
+                  {reviewSuccessType === 'created' && 'Tu reseña ha sido publicada con éxito'}
+                  {reviewSuccessType === 'edited' && 'Tu reseña se ha actualizado correctamente'}
+                  {reviewSuccessType === 'deleted' && 'Tu reseña ha sido eliminada'}
+                  {reviewSuccessType === 'reported' && 'Nuestro equipo revisará la denuncia pronto'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de denuncia */}
+        {showReportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-200 dark:border-gray-700">
+              {/* Encabezado */}
+              <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  🚩 Denunciar reseña
+                </h2>
+                <p className="text-sm text-orange-100 mt-1">Ayudanos a mantener una comunidad segura</p>
+              </div>
+
+              {/* Contenido */}
+              <div className="p-6 space-y-4">
+                {reportError && (
+                  <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg border border-red-200 dark:border-red-800 text-sm">
+                    ⚠️ {reportError}
+                  </div>
+                )}
+
+                {/* Razón de denuncia */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
+                    ¿Cuál es el motivo de la denuncia?
+                  </label>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'offensive_content', label: 'Contenido ofensivo o faltas de respeto' },
+                      { value: 'spam', label: 'Spam o contenido irrelevante' },
+                      { value: 'fake_review', label: 'Reseña falsa o engañosa' },
+                      { value: 'inappropriate', label: 'Contenido inapropiado' },
+                      { value: 'other', label: 'Otro motivo' },
+                    ].map((option) => (
+                      <label key={option.value} className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="report-reason"
+                          value={option.value}
+                          checked={reportReason === option.value}
+                          onChange={(e) => setReportReason(e.target.value)}
+                          className="w-4 h-4 accent-orange-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                          {option.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Detalles adicionales */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Detalles adicionales (opcional)
+                  </label>
+                  <textarea
+                    value={reportDetails}
+                    onChange={(e) => setReportDetails(e.target.value)}
+                    placeholder="Proporciona más información que nos ayude a entender el problema..."
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    rows="3"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Máximo 500 caracteres
+                  </p>
+                </div>
+              </div>
+
+              {/* Botones */}
+              <div className="bg-gray-50 dark:bg-gray-800 p-6 flex gap-3 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={handleCancelReport}
+                  disabled={submittingReport}
+                  className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSubmitReport}
+                  disabled={submittingReport}
+                  className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submittingReport ? '⏳ Enviando...' : '🚩 Denunciar'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -659,8 +853,8 @@ export default function TeacherProfile() {
                     </div>
                   ) : (
                     <>
-                      {/* Cabecera */}
-                      <div className="flex items-start justify-between mb-4">
+                      {/* Cabecera con menú */}
+                      <div className="flex items-start justify-between mb-4 relative">
                         <div className="flex items-start gap-4 flex-1">
                           {/* Avatar */}
                           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0 overflow-hidden border-3 border-blue-200 dark:border-blue-800 shadow-md">
@@ -678,13 +872,13 @@ export default function TeacherProfile() {
                             )}
                           </div>
 
-                          {/* Info del estudiante */}
+                          {/* Info del estudiante y rating */}
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-gray-900 dark:text-white text-base">
                               {rating.student_name || 'Estudiante anónimo'}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              📅 {rating.created_at
+                               {rating.created_at
                                 ? new Date(rating.created_at).toLocaleDateString('es-ES', { 
                                     year: 'numeric', 
                                     month: 'long', 
@@ -692,31 +886,57 @@ export default function TeacherProfile() {
                                   })
                                 : 'Recientemente'}
                             </p>
+                            {/* Rating numérico con estrellas */}
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
+                                {'★'.repeat(rating.rating)}{'☆'.repeat(5 - rating.rating)}
+                              </span>
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {rating.rating}/5
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Rating */}
-                        <div className="flex gap-0.5 flex-shrink-0">
-                          {[...Array(5)].map((_, i) => (
-                            <span
-                              key={i}
-                              className={`text-xl transition-transform ${
-                                i < (rating.rating || 0)
-                                  ? 'text-yellow-400 drop-shadow-sm'
-                                  : 'text-gray-300 dark:text-gray-600'
-                              }`}
-                            >
-                              ★
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                        {/* Botón de menú con tres puntos */}
+                        <div className="relative">
+                          <button
+                            onClick={() => setOpenMenuRatingId(openMenuRatingId === rating.id ? null : rating.id)}
+                            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Más opciones"
+                          >
+                            ⋯
+                          </button>
 
-                      {/* Rating numérico */}
-                      <div className="mb-4 inline-block bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1 rounded-full border border-yellow-200 dark:border-yellow-800">
-                        <span className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
-                          {rating.rating}/5
-                        </span>
+                          {/* Menú desplegable */}
+                          {openMenuRatingId === rating.id && (
+                            <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 min-w-max overflow-hidden">
+                              {user?.id === rating.student_id ? (
+                                <>
+                                  <button
+                                    onClick={() => handleEditRating(rating)}
+                                    className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors block"
+                                  >
+                                    ✏️ Editar
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteRating(rating.id)}
+                                    className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors block border-t border-gray-200 dark:border-gray-700"
+                                  >
+                                    🗑️ Eliminar
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => handleReportRating(rating.id)}
+                                  className="w-full text-left px-4 py-2 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors block"
+                                >
+                                  🚩 Denunciar
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Texto de la reseña */}
@@ -730,22 +950,10 @@ export default function TeacherProfile() {
                         </p>
                       </div>
 
-                      {/* Botones de acción - Solo si es el autor */}
-                      {user?.id === rating.student_id && (
-                        <div className="flex gap-3 opacity-100 sm:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pt-2 border-t border-gray-200 dark:border-gray-700">
-                          <button
-                            onClick={() => handleEditRating(rating)}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-                          >
-                            ✏️ Editar
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRating(rating.id)}
-                            disabled={deletingRatingId === rating.id}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-                          >
-                            {deletingRatingId === rating.id ? '⏳ Eliminando...' : '🗑️ Eliminar'}
-                          </button>
+                      {/* Estado de carga */}
+                      {deletingRatingId === rating.id && (
+                        <div className="mt-3 p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-sm border border-blue-200 dark:border-blue-800 text-center">
+                          ⏳ Eliminando reseña...
                         </div>
                       )}
 
@@ -753,6 +961,14 @@ export default function TeacherProfile() {
                         <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-sm border border-red-200 dark:border-red-800">
                           ⚠️ {deletingErrors[rating.id]}
                         </div>
+                      )}
+
+                      {/* Cierra menú al hacer clic fuera */}
+                      {openMenuRatingId === rating.id && (
+                        <div
+                          className="fixed inset-0 z-0"
+                          onClick={() => setOpenMenuRatingId(null)}
+                        />
                       )}
                     </>
                   )}

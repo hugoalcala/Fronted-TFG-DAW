@@ -1,5 +1,31 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
+// Helper para obtener rating promedio de un profesor
+const getTeacherAverageRating = async (teacherId) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/teachers/${teacherId}/ratings`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Accept': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = await response.json()
+    return data?.data?.average ?? data?.average ?? null
+  } catch (error) {
+    console.warn(`⚠️ Failed to fetch rating for teacher ${teacherId}:`, error)
+    return null
+  }
+}
+
 export const teachersService = {
   // Obtener lista de maestros
   async getTeachers(filters = {}) {
@@ -127,6 +153,26 @@ export const teachersService = {
     } catch (error) {
       console.error('❌ Error fetching trending subjects:', error)
       return [] // Return empty array on error
+    }
+  },
+
+  // Obtener profesores enriquecidos con su rating promedio
+  async getTeachersWithRatings(filters = {}) {
+    try {
+      const teachers = await this.getTeachers(filters)
+      
+      // Enriquecer en paralelo con ratings
+      const enrichedTeachers = await Promise.all(
+        teachers.map(async (teacher) => ({
+          ...teacher,
+          rating: await getTeacherAverageRating(teacher.id),
+        }))
+      )
+      
+      return enrichedTeachers
+    } catch (error) {
+      console.error('❌ Error fetching teachers with ratings:', error)
+      throw error
     }
   },
 }
