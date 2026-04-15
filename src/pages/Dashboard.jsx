@@ -540,7 +540,7 @@ function Dashboard() {
                               className="w-full text-left px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors text-sm"
                             >
                               ✏️ Editar
-                            </button>>
+                            </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
