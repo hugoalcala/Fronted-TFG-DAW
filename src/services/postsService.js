@@ -1,11 +1,11 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
 export const postsService = {
-  // Obtener feed personalizado basado en intereses
+  // Obtener feed de todos los posts
   async getFeed(page = 1) {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/posts/feed?page=${page}`,
+        `${API_BASE_URL}/posts?page=${page}`,
         {
           method: 'GET',
           headers: {
@@ -30,12 +30,12 @@ export const postsService = {
   },
 
   // Crear un nuevo post
-  async createPost(content, image = null) {
+  async createPost(content, file = null) {
     try {
       const formData = new FormData()
       formData.append('content', content)
-      if (image) {
-        formData.append('image', image)
+      if (file) {
+        formData.append('file', file)
       }
 
       const response = await fetch(
@@ -66,6 +66,7 @@ export const postsService = {
   // Like a un post
   async likePost(postId) {
     try {
+      console.log(`👍 Sending like request to /posts/${postId}/like`)
       const response = await fetch(
         `${API_BASE_URL}/posts/${postId}/like`,
         {
@@ -73,19 +74,23 @@ export const postsService = {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
           },
         }
       )
 
+      const data = await response.json()
+      console.log(`Response status: ${response.status}`, data)
+
       if (!response.ok) {
-        throw new Error('Failed to like post')
+        throw new Error(data.message || `Failed to like post: ${response.status}`)
       }
 
-      const data = await response.json()
+      console.log('✅ Like successful:', data)
       return data
 
     } catch (error) {
-      console.error('❌ Error liking post:', error)
+      console.error('❌ Error liking post:', error.message)
       throw error
     }
   },
@@ -93,6 +98,7 @@ export const postsService = {
   // Unlike a un post
   async unlikePost(postId) {
     try {
+      console.log(`👎 Sending unlike request to /posts/${postId}/unlike`)
       const response = await fetch(
         `${API_BASE_URL}/posts/${postId}/unlike`,
         {
@@ -100,26 +106,35 @@ export const postsService = {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
           },
         }
       )
 
+      const data = await response.json()
+      console.log(`Response status: ${response.status}`, data)
+
       if (!response.ok) {
-        throw new Error('Failed to unlike post')
+        throw new Error(data.message || `Failed to unlike post: ${response.status}`)
       }
 
-      const data = await response.json()
+      console.log('✅ Unlike successful:', data)
       return data
 
     } catch (error) {
-      console.error('❌ Error unliking post:', error)
+      console.error('❌ Error unliking post:', error.message)
       throw error
     }
   },
 
-  // Comentar un post
-  async commentPost(postId, comment) {
+  // Comentar un post (o responder a un comentario)
+  async commentPost(postId, comment, parentCommentId = null) {
     try {
+      const body = { comment }
+      if (parentCommentId) {
+        body.parent_comment_id = parentCommentId
+      }
+
       const response = await fetch(
         `${API_BASE_URL}/posts/${postId}/comments`,
         {
@@ -129,7 +144,7 @@ export const postsService = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
-          body: JSON.stringify({ comment }),
+          body: JSON.stringify(body),
         }
       )
 
@@ -173,6 +188,40 @@ export const postsService = {
     }
   },
 
+  // Actualizar un post
+  async updatePost(postId, content, file = null) {
+    try {
+      const formData = new FormData()
+      formData.append('content', content)
+      if (file) {
+        formData.append('file', file)
+      }
+      formData.append('_method', 'PUT') // Para soporte de PUT en formularios
+
+      const response = await fetch(
+        `${API_BASE_URL}/posts/${postId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          },
+          body: formData,
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to update post')
+      }
+
+      const data = await response.json()
+      return data
+
+    } catch (error) {
+      console.error('❌ Error updating post:', error)
+      throw error
+    }
+  },
+
   // Eliminar un post
   async deletePost(postId) {
     try {
@@ -183,19 +232,119 @@ export const postsService = {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
           },
         }
       )
 
       if (!response.ok) {
-        throw new Error('Failed to delete post')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Server response:', response.status, errorData)
+        throw new Error(errorData.message || `Failed to delete post: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log('✅ Post deleted:', data)
       return data
 
     } catch (error) {
       console.error('❌ Error deleting post:', error)
+      throw error
+    }
+  },
+
+  // Obtener IDs de posts que el usuario ya le dio like
+  async getUserLikedPosts() {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/user/liked-posts`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Accept': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        console.warn('Failed to fetch liked posts:', response.status)
+        return []
+      }
+
+      const data = await response.json()
+      console.log('❤️ Backend returned liked posts:', data.data)
+      return Array.isArray(data.data) ? data.data : []
+
+    } catch (error) {
+      console.error('❌ Error fetching liked posts:', error)
+      return []
+    }
+  },
+
+  // Editar un comentario
+  async updateComment(postId, commentId, comment) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/posts/${postId}/comments/${commentId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ comment }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to update comment: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('✅ Comment updated:', data)
+      return data.data || data
+
+    } catch (error) {
+      console.error('❌ Error updating comment:', error)
+      throw error
+    }
+  },
+
+  // Eliminar un comentario
+  async deleteComment(postId, commentId) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/posts/${postId}/comments/${commentId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to delete comment: ${response.status}`)
+      }
+
+      // Manejar respuestas sin contenido (204 No Content)
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        console.log('✅ Comment deleted')
+        return { success: true }
+      }
+
+      const data = await response.json()
+      console.log('✅ Comment deleted:', data)
+      return data
+
+    } catch (error) {
+      console.error('❌ Error deleting comment:', error)
       throw error
     }
   },
