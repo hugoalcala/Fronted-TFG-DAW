@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../context/AuthContext'
@@ -14,7 +14,25 @@ function Dashboard() {
   const [postsLoading, setPostsLoading] = useState(true)
   const [categories] = useState(['Programación', 'Matemáticas', 'Inglés', 'Historia', 'Ciencias'])
   const [newPostContent, setNewPostContent] = useState('')
+  const [newPostFile, setNewPostFile] = useState(null)
+  const [newPostFilePreview, setNewPostFilePreview] = useState(null)
+  const [newPostFileType, setNewPostFileType] = useState(null)
+  const [newPostFileName, setNewPostFileName] = useState(null)
   const [newPostLoading, setNewPostLoading] = useState(false)
+  
+  // Estados para editar posts
+  const [editingPostId, setEditingPostId] = useState(null)
+  const [editContent, setEditContent] = useState('')
+  const [editFile, setEditFile] = useState(null)
+  const [editFilePreview, setEditFilePreview] = useState(null)
+  const [editFileType, setEditFileType] = useState(null)
+  const [editFileName, setEditFileName] = useState(null)
+  const [editLoading, setEditLoading] = useState(false)
+  const [deletingPostId, setDeletingPostId] = useState(null)
+  const [openMenuPostId, setOpenMenuPostId] = useState(null)
+  const menuTimerRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const editFileInputRef = useRef(null)
 
   // Redirigir a login si no está autenticado
   useEffect(() => {
@@ -84,6 +102,128 @@ function Dashboard() {
     loadPosts()
   }, [isAuthenticated])
 
+  // Determinar tipo de archivo y obtener icono
+  const getFileInfo = (file) => {
+    const extension = file?.name?.split('.')?.pop()?.toLowerCase() || ''
+    const name = file?.name || ''
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) {
+      return { type: 'image', icon: '🖼️', label: 'Imagen' }
+    }
+    if (['mp4', 'webm', 'avi', 'mov', 'mkv'].includes(extension)) {
+      return { type: 'video', icon: '🎥', label: 'Video' }
+    }
+    if (extension === 'pdf') {
+      return { type: 'pdf', icon: '📄', label: 'PDF' }
+    }
+    if (['doc', 'docx'].includes(extension)) {
+      return { type: 'document', icon: '📝', label: 'Documento' }
+    }
+    if (['xls', 'xlsx'].includes(extension)) {
+      return { type: 'document', icon: '📊', label: 'Hoja de cálculo' }
+    }
+    if (['ppt', 'pptx'].includes(extension)) {
+      return { type: 'document', icon: '🎞️', label: 'Presentación' }
+    }
+    if (['zip', 'rar'].includes(extension)) {
+      return { type: 'archive', icon: '📦', label: 'Archivo comprimido' }
+    }
+    return { type: 'file', icon: '📎', label: 'Archivo' }
+  }
+
+  // Manejar selección de archivo para nuevo post
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setNewPostFile(file)
+      const fileInfo = getFileInfo(file)
+      setNewPostFileType(fileInfo.type)
+      setNewPostFileName(file.name)
+      
+      // Crear preview
+      if (fileInfo.type === 'image') {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setNewPostFilePreview(reader.result)
+        }
+        reader.readAsDataURL(file)
+      } else {
+        setNewPostFilePreview(fileInfo)
+      }
+    }
+  }
+
+  // Manejar eliminación de archivo preview
+  const handleRemoveFile = () => {
+    setNewPostFile(null)
+    setNewPostFilePreview(null)
+    setNewPostFileType(null)
+    setNewPostFileName(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  // Manejar selección de archivo para edición
+  const handleEditFileSelect = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setEditFile(file)
+      const fileInfo = getFileInfo(file)
+      setEditFileType(fileInfo.type)
+      setEditFileName(file.name)
+      
+      // Crear preview
+      if (fileInfo.type === 'image') {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setEditFilePreview(reader.result)
+        }
+        reader.readAsDataURL(file)
+      } else {
+        setEditFilePreview(fileInfo)
+      }
+    }
+  }
+
+  // Manejar eliminación de archivo en edición
+  const handleRemoveEditFile = () => {
+    setEditFile(null)
+    setEditFilePreview(null)
+    setEditFileType(null)
+    setEditFileName(null)
+    if (editFileInputRef.current) editFileInputRef.current.value = ''
+  }
+
+  // Renderizar preview del archivo
+  const renderFilePreview = (preview, fileType) => {
+    if (!preview) return null
+    
+    if (fileType === 'image' && typeof preview === 'string') {
+      return (
+        <img src={preview} alt="Preview" className="max-h-40 rounded-lg" />
+      )
+    }
+    
+    if (typeof preview === 'object') {
+      return (
+        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 inline-flex items-center gap-3">
+          <span className="text-3xl">{preview.icon}</span>
+          <div>
+            <p className="font-bold text-gray-900 dark:text-white">{preview.label}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">{preview.label}</p>
+          </div>
+        </div>
+      )
+    }
+    
+    return null
+  }
+
+  // Manejar selección de archivo para nuevo post
+  const handleImageSelect = handleFileSelect
+  const handleRemoveImage = handleRemoveFile
+  const handleEditImageSelect = handleEditFileSelect
+  const handleRemoveEditImage = handleRemoveEditFile
+
   // Crear nuevo post
   const handleCreatePost = async () => {
     if (!newPostContent.trim()) {
@@ -93,10 +233,16 @@ function Dashboard() {
 
     try {
       setNewPostLoading(true)
-      const result = await postsService.createPost(newPostContent)
+      const result = await postsService.createPost(newPostContent, newPostFile)
       
       if (result) {
         setNewPostContent('')
+        setNewPostFile(null)
+        setNewPostFilePreview(null)
+        setNewPostFileType(null)
+        setNewPostFileName(null)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        
         // Recargar posts
         const data = await postsService.getFeed()
         if (Array.isArray(data)) {
@@ -121,6 +267,107 @@ function Dashboard() {
       ))
     } catch (error) {
       console.error('Error liking post:', error)
+    }
+  }
+
+  // Abrir modal de edición
+  const handleEditPost = (post) => {
+    setEditingPostId(post.id)
+    setEditContent(post.content)
+    setEditFile(null)
+    
+    // Si el post tiene archivo, mostrar preview
+    if (post.file_url) {
+      const fileInfo = {
+        type: post.file_type || 'file',
+        icon: '📎',
+        label: post.file_name || 'Archivo'
+      }
+      
+      if (post.file_type === 'image') {
+        setEditFilePreview(post.file_url)
+      } else {
+        setEditFilePreview(fileInfo)
+      }
+      
+      setEditFileType(post.file_type)
+      setEditFileName(post.file_name)
+    } else {
+      setEditFilePreview(null)
+      setEditFileType(null)
+      setEditFileName(null)
+    }
+    
+    setOpenMenuPostId(null)
+  }
+
+  // Guardar cambios del post editado
+  const handleSaveEditPost = async () => {
+    if (!editContent.trim()) {
+      alert('Por favor escribe algo en el post')
+      return
+    }
+
+    try {
+      setEditLoading(true)
+      await postsService.updatePost(editingPostId, editContent, editFile)
+      
+      // Actualizar post en la lista local
+      const updatedPost = posts.find(p => p.id === editingPostId)
+      if (editFile && editFilePreview && editFileType === 'image') {
+        updatedPost.file_url = editFilePreview
+      }
+      
+      setPosts(posts.map(post =>
+        post.id === editingPostId ? { 
+          ...post, 
+          content: editContent,
+          ...(editFile && editFileType === 'image' && editFilePreview && { file_url: editFilePreview })
+        } : post
+      ))
+      
+      setEditingPostId(null)
+      setEditContent('')
+      setEditFile(null)
+      setEditFilePreview(null)
+      setEditFileType(null)
+      setEditFileName(null)
+      if (editFileInputRef.current) editFileInputRef.current.value = ''
+    } catch (error) {
+      console.error('Error updating post:', error)
+      alert('No se pudo actualizar el post')
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  // Cancelar edición
+  const handleCancelEdit = () => {
+    setEditingPostId(null)
+    setEditContent('')
+    setEditFile(null)
+    setEditFilePreview(null)
+    setEditFileType(null)
+    setEditFileName(null)
+    if (editFileInputRef.current) editFileInputRef.current.value = ''
+  }
+
+  // Eliminar post con confirmación
+  const handleDeletePost = async (postId) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este post?')) return
+
+    try {
+      setDeletingPostId(postId)
+      await postsService.deletePost(postId)
+      
+      // Remover post de la lista
+      setPosts(posts.filter(post => post.id !== postId))
+      setOpenMenuPostId(null)
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      alert('No se pudo eliminar el post')
+    } finally {
+      setDeletingPostId(null)
     }
   }
 
@@ -157,8 +404,12 @@ function Dashboard() {
           {/* Create Post */}
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6 mb-6">
             <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xl">
-                👤
+              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden border-2 border-blue-200 dark:border-blue-800">
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span>{(user?.name || 'U').charAt(0).toUpperCase()}</span>
+                )}
               </div>
               <div className="flex-1">
                 <textarea
@@ -168,9 +419,43 @@ function Dashboard() {
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
                   rows="3"
                 />
+                
+                {/* File Preview */}
+                {newPostFilePreview && (
+                  <div className="mt-3 relative inline-block">
+                    {renderFilePreview(newPostFilePreview, newPostFileType)}
+                    <button
+                      onClick={handleRemoveFile}
+                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                
+                {/* File Input */}
+                <div className="flex items-center gap-2 mt-3 mb-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="post-file-input"
+                  />
+                  <label
+                    htmlFor="post-file-input"
+                    className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer text-sm font-medium"
+                  >
+                    📎 Agregar archivo
+                  </label>
+                </div>
+                
                 <div className="flex justify-end gap-2 mt-3">
                   <button 
-                    onClick={() => setNewPostContent('')}
+                    onClick={() => {
+                      setNewPostContent('')
+                      handleRemoveFile()
+                    }}
                     className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                   >
                     Cancelar
@@ -198,37 +483,100 @@ function Dashboard() {
               posts.map((post) => (
                 <div
                   key={post.id}
-                  className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6 hover:shadow-xl transition-shadow"
+                  className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6 hover:shadow-xl transition-shadow relative"
                 >
                   {/* Post Header */}
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-4xl">{post.avatar}</span>
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden border-2 border-blue-200 dark:border-blue-800">
+                        {post.avatar_url ? (
+                          <img src={post.avatar_url} alt={post.author} className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{post.avatar || '👤'}</span>
+                        )}
+                      </div>
                       <div>
                         <h3 className="font-bold text-gray-900 dark:text-white">
-                          {post.author}
+                          {post.author || post.user?.name}
                         </h3>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {post.subject} • {post.timestamp}
+                          {post.subject || post.category || 'General'} • {post.timestamp || 'Recientemente'}
                         </p>
                       </div>
                     </div>
-                    <button className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                      ⋯
-                    </button>
+                    
+                    {/* Menú de opciones - solo para el autor */}
+                    {user?.id === post.user_id && (
+                      <div className="relative">
+                        <button 
+                          onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
+                          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                          ⋯
+                        </button>
+                        
+                        {/* Dropdown Menu */}
+                        {openMenuPostId === post.id && (
+                          <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 min-w-max">
+                            <button
+                              onClick={() => handleEditPost(post)}
+                              className="w-full text-left px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors text-sm"
+                            >
+                              ✏️ Editar
+                            </button>
+                            <button
+                              onClick={() => handleDeletePost(post.id)}
+                              disabled={deletingPostId === post.id}
+                              className="w-full text-left px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-sm border-t border-gray-200 dark:border-gray-700 disabled:opacity-50"
+                            >
+                              🗑️ Eliminar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Post Content */}
                   <div className="mb-4">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                      {post.title}
-                    </h2>
                     <p className="text-gray-700 dark:text-gray-300 mb-4">
                       {post.content}
                     </p>
-                    {post.image && (
-                      <div className="text-6xl text-center py-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                        {post.image}
+                    {post.file_url && (
+                      <div className="mt-3">
+                        {post.file_type === 'image' ? (
+                          <img 
+                            src={post.file_url} 
+                            alt="Post" 
+                            className="w-full max-h-80 object-cover rounded-lg mb-4"
+                          />
+                        ) : post.file_type === 'video' ? (
+                          <video 
+                            src={post.file_url} 
+                            controls
+                            className="w-full max-h-80 rounded-lg mb-4"
+                          />
+                        ) : (
+                          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 inline-flex items-center gap-4 mb-4">
+                            <span className="text-4xl">
+                              {post.file_type === 'pdf' ? '📄' : 
+                               post.file_type === 'document' ? '📝' : 
+                               post.file_type === 'archive' ? '📦' : '📎'}
+                            </span>
+                            <div>
+                              <p className="text-sm font-bold text-gray-900 dark:text-white max-w-xs truncate">
+                                {post.file_name || 'Archivo'}
+                              </p>
+                              <a 
+                                href={post.file_url} 
+                                download
+                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                              >
+                                Descargar
+                              </a>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -239,10 +587,10 @@ function Dashboard() {
                       onClick={() => handleLikePost(post.id)}
                       className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
-                      👍 {post.likes}
+                      👍 {post.likes || 0}
                     </button>
                     <button className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                      💬 {post.comments}
+                      💬 {post.comments || 0}
                     </button>
                     <button className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                       📤 Compartir
@@ -302,6 +650,83 @@ function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Edición */}
+      {editingPostId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 p-6 max-h-screen overflow-y-auto">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Editar Post
+            </h3>
+            
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="Edita tu post..."
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
+              rows="6"
+            />
+            
+            {/* File Preview */}
+            {editFilePreview && (
+              <div className="mt-4 relative inline-block">
+                {renderFilePreview(editFilePreview, editFileType)}
+                <button
+                  onClick={handleRemoveEditFile}
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            
+            {/* File Input */}
+            <div className="flex items-center gap-2 mt-4">
+              <input
+                ref={editFileInputRef}
+                type="file"
+                onChange={handleEditFileSelect}
+                className="hidden"
+                id="edit-post-file-input"
+              />
+              <label
+                htmlFor="edit-post-file-input"
+                className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer text-sm font-medium"
+              >
+                📎 {editFilePreview ? 'Cambiar archivo' : 'Agregar archivo'}
+              </label>
+            </div>
+            
+            <div className="flex gap-3 justify-end mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+              <button
+                onClick={() => {
+                  handleCancelEdit()
+                  handleRemoveEditFile()
+                }}
+                disabled={editLoading}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEditPost}
+                disabled={editLoading || !editContent.trim()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editLoading ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay para cerrar menú */}
+      {openMenuPostId !== null && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setOpenMenuPostId(null)}
+        />
+      )}
     </AuthLayout>
   )
 }

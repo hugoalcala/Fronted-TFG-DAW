@@ -1,11 +1,11 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
 export const postsService = {
-  // Obtener feed personalizado basado en intereses
+  // Obtener feed de todos los posts
   async getFeed(page = 1) {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/posts/feed?page=${page}`,
+        `${API_BASE_URL}/posts?page=${page}`,
         {
           method: 'GET',
           headers: {
@@ -30,12 +30,12 @@ export const postsService = {
   },
 
   // Crear un nuevo post
-  async createPost(content, image = null) {
+  async createPost(content, file = null) {
     try {
       const formData = new FormData()
       formData.append('content', content)
-      if (image) {
-        formData.append('image', image)
+      if (file) {
+        formData.append('file', file)
       }
 
       const response = await fetch(
@@ -169,6 +169,40 @@ export const postsService = {
 
     } catch (error) {
       console.error('❌ Error fetching comments:', error)
+      throw error
+    }
+  },
+
+  // Actualizar un post
+  async updatePost(postId, content, file = null) {
+    try {
+      const formData = new FormData()
+      formData.append('content', content)
+      if (file) {
+        formData.append('file', file)
+      }
+      formData.append('_method', 'PUT') // Para soporte de PUT en formularios
+
+      const response = await fetch(
+        `${API_BASE_URL}/posts/${postId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          },
+          body: formData,
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to update post')
+      }
+
+      const data = await response.json()
+      return data
+
+    } catch (error) {
+      console.error('❌ Error updating post:', error)
       throw error
     }
   },
