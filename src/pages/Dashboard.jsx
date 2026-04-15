@@ -32,6 +32,7 @@ function Dashboard() {
   const [openMenuPostId, setOpenMenuPostId] = useState(null)
   const [userLikes, setUserLikes] = useState(new Set()) // Posts que el usuario ya le dio like
   const [liking, setLiking] = useState(null) // Post que se está procesando like
+  const [sharePostId, setSharePostId] = useState(null) // Post que se está compartiendo
   const menuTimerRef = useRef(null)
   const fileInputRef = useRef(null)
   const editFileInputRef = useRef(null)
@@ -431,6 +432,59 @@ function Dashboard() {
     }
   }
 
+  // Compartir post
+  const handleSharePost = (post) => {
+    const postUrl = `${window.location.origin}/dashboard?post=${post.id}`
+    const shareText = `${post.content.substring(0, 100)}... ${post.author || 'Un usuario'} en eduConnect 🎓`
+    
+    // Opciones de compartir
+    const shareOptions = [
+      {
+        name: 'Twitter / X',
+        icon: '𝕏',
+        handler: () => {
+          const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(postUrl)}`
+          window.open(url, '_blank', 'width=600,height=400')
+        }
+      },
+      {
+        name: 'Facebook',
+        icon: '�',
+        handler: () => {
+          const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`
+          window.open(url, '_blank', 'width=600,height=400')
+        }
+      },
+      {
+        name: 'WhatsApp',
+        icon: '💬',
+        handler: () => {
+          const url = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + postUrl)}`
+          window.open(url, '_blank')
+        }
+      },
+      {
+        name: 'LinkedIn',
+        icon: '🔗',
+        handler: () => {
+          const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`
+          window.open(url, '_blank', 'width=600,height=400')
+        }
+      },
+      {
+        name: 'Copiar enlace',
+        icon: '📋',
+        handler: () => {
+          navigator.clipboard.writeText(postUrl)
+          alert('✅ Enlace copiado al portapapeles')
+          setSharePostId(null)
+        }
+      },
+    ]
+    
+    return shareOptions
+  }
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -679,7 +733,10 @@ function Dashboard() {
                     <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-semibold">
                       💬 {post.comments_count || 0}
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-semibold">
+                    <button 
+                      onClick={() => setSharePostId(post.id)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400 transition-colors font-semibold"
+                    >
                       📤 Compartir
                     </button>
                   </div>
@@ -814,6 +871,61 @@ function Dashboard() {
           onClick={() => setOpenMenuPostId(null)}
         />
       )}
+
+      {/* Modal de Compartir */}
+      {sharePostId && (() => {
+        const postToShare = posts.find(p => p.id === sharePostId)
+        const shareOptions = postToShare ? handleSharePost(postToShare) : []
+        
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-800 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  📤 Compartir post
+                </h3>
+                <button
+                  onClick={() => setSharePostId(null)}
+                  className="text-2xl text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Post Preview */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
+                <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+                  {postToShare?.content}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Por {postToShare?.author || 'Un usuario'}
+                </p>
+              </div>
+
+              {/* Share Options Grid */}
+              <div className="space-y-2">
+                {shareOptions.map((option, index) => (
+                  <button
+                    key={index}
+                    onClick={option.handler}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors text-left font-medium text-gray-900 dark:text-white"
+                  >
+                    <span>{option.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setSharePostId(null)}
+                className="w-full mt-4 px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )
+      })()}
     </AuthLayout>
   )
 }
