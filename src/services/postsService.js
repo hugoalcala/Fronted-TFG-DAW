@@ -217,15 +217,19 @@ export const postsService = {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
           },
         }
       )
 
       if (!response.ok) {
-        throw new Error('Failed to delete post')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Server response:', response.status, errorData)
+        throw new Error(errorData.message || `Failed to delete post: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log('✅ Post deleted:', data)
       return data
 
     } catch (error) {

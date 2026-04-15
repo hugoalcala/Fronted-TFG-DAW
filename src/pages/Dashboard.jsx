@@ -354,18 +354,26 @@ function Dashboard() {
 
   // Eliminar post con confirmación
   const handleDeletePost = async (postId) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este post?')) return
+    console.log('🗑️ CLIC EN ELIMINAR - Post ID:', postId)
+    
+    if (!confirm('¿Estás seguro de que quieres eliminar este post?')) {
+      console.log('❌ Usuario canceló')
+      return
+    }
 
     try {
+      console.log('📤 Enviando DELETE request...')
       setDeletingPostId(postId)
-      await postsService.deletePost(postId)
+      const result = await postsService.deletePost(postId)
+      console.log('✅ Post eliminado:', result)
       
       // Remover post de la lista
       setPosts(posts.filter(post => post.id !== postId))
       setOpenMenuPostId(null)
+      alert('✅ Post eliminado exitosamente')
     } catch (error) {
-      console.error('Error deleting post:', error)
-      alert('No se pudo eliminar el post')
+      console.error('❌ ERROR:', error.message)
+      alert(`Error: ${error.message}`)
     } finally {
       setDeletingPostId(null)
     }
@@ -506,10 +514,13 @@ function Dashboard() {
                     </div>
                     
                     {/* Menú de opciones - solo para el autor */}
-                    {user?.id === post.user_id && (
+                    {Number(user?.id) === Number(post.user_id) && (
                       <div className="relative">
                         <button 
-                          onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
+                          onClick={() => {
+                            console.log(`Toggle menu para post ${post.id}, user: ${user?.id}, post_user: ${post.user_id}`)
+                            setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)
+                          }}
                           className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         >
                           ⋯
@@ -517,17 +528,26 @@ function Dashboard() {
                         
                         {/* Dropdown Menu */}
                         {openMenuPostId === post.id && (
-                          <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 min-w-max">
+                          <div 
+                            className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 min-w-max"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <button
-                              onClick={() => handleEditPost(post)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEditPost(post)
+                              }}
                               className="w-full text-left px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors text-sm"
                             >
                               ✏️ Editar
-                            </button>
+                            </button>>
                             <button
-                              onClick={() => handleDeletePost(post.id)}
-                              disabled={deletingPostId === post.id}
-                              className="w-full text-left px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-sm border-t border-gray-200 dark:border-gray-700 disabled:opacity-50"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                console.log('📍 Click en eliminar para post:', post.id)
+                                handleDeletePost(post.id)
+                              }}
+                              className="w-full text-left px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-sm border-t border-gray-200 dark:border-gray-700 hover:font-semibold"
                             >
                               🗑️ Eliminar
                             </button>
