@@ -1,5 +1,12 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
+// Helper para logging condicional en desarrollo
+const isDev = import.meta.env.DEV
+const logger = {
+  debug: (msg, data) => isDev && console.log(msg, data),
+  error: (msg, data) => console.error(msg, data),
+}
+
 export const reportService = {
   // Obtener todas las denuncias (solo admin)
   async getAllReports(filters = {}) {
@@ -14,7 +21,7 @@ export const reportService = {
       if (filters.sortOrder) params.append('sort_order', filters.sortOrder)
 
       const url = `${API_BASE_URL}/admin/reports${params.toString() ? '?' + params : ''}`
-      console.log('📋 Fetching reports from:', url)
+      logger.debug('📋 Fetching reports from:', url)
 
       const response = await fetch(url, {
         method: 'GET',
@@ -26,17 +33,17 @@ export const reportService = {
 
       if (!response.ok) {
         const errorData = await response.text()
-        console.error('❌ HTTP Error response:', errorData)
+        logger.error('❌ HTTP Error response:', errorData)
         throw new Error(`HTTP ${response.status}: ${errorData}`)
       }
 
       const data = await response.json()
-      console.log('📋 Reports response data:', data)
+      logger.debug('📋 Reports response data:', data)
       
       // Devolver la respuesta completa para que el AdminDashboard acceda a paginación
       return data
     } catch (error) {
-      console.error('❌ Error fetching reports:', error)
+      logger.error('❌ Error fetching reports:', error)
       throw error
     }
   },
@@ -45,7 +52,7 @@ export const reportService = {
   async getReportDetails(reportId) {
     try {
       const url = `${API_BASE_URL}/admin/reports/${reportId}`
-      console.log('📋 Fetching report details from:', url)
+      logger.debug('📋 Fetching report details from:', url)
 
       const response = await fetch(url, {
         method: 'GET',
@@ -128,7 +135,9 @@ export const reportService = {
     }
   },
 
-  // Enviar mensaje a usuario
+  // Enviar mensaje a usuario (usado en el futuro para el sistema de chat/mensajería)
+  // TODO: Integrar con la interfaz de chat cuando se implemente
+  // Mantener este método para uso futuro en la notificación manual a usuarios sobre decisiones de denuncias
   async sendMessageToUser(userId, subject, message) {
     try {
       const response = await fetch(
@@ -151,7 +160,7 @@ export const reportService = {
       const data = await response.json()
       return data
     } catch (error) {
-      console.error('❌ Error sending message:', error)
+      logger.error('❌ Error sending message:', error)
       throw error
     }
   },

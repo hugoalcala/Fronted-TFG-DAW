@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { reportService } from '../services/reportService'
+import { REPORT_REASON_OPTIONS, REPORT_STATUS_OPTIONS, getReasonLabel, getStatusBadgeColor } from '../constants/reportConstants'
 
 export default function ReportsManagement() {
   const [reports, setReports] = useState([])
@@ -16,20 +17,31 @@ export default function ReportsManagement() {
   const [adminNotes, setAdminNotes] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [notification, setNotification] = useState(null)
-
-  const statusOptions = ['pending', 'approved', 'rejected']
-  const reasonOptions = [
-    'inappropriate_content',
-    'harassment',
-    'spam',
-    'misinformation',
-    'other',
-  ]
+  const notificationTimerRef = useRef(null)
 
   const showNotification = (message, type = 'success') => {
+    // Limpiar timer anterior si existe
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+    
     setNotification({ message, type })
-    setTimeout(() => setNotification(null), 3000)
+    
+    // Crear nuevo timer y guardar en ref
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null)
+      notificationTimerRef.current = null
+    }, 3000)
   }
+
+  useEffect(() => {
+    return () => {
+      // Limpiar timer al desmontar componente
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     loadReports()
@@ -93,30 +105,6 @@ export default function ReportsManagement() {
     }
   }
 
-  const getStatusBadgeColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-      case 'approved':
-        return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-      case 'rejected':
-        return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-      default:
-        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-    }
-  }
-
-  const getReasonLabel = (reason) => {
-    const labels = {
-      inappropriate_content: 'Contenido Inapropiado',
-      harassment: 'Acoso',
-      spam: 'Spam',
-      misinformation: 'Desinformación',
-      other: 'Otro',
-    }
-    return labels[reason] || reason
-  }
-
   const clearFilters = () => {
     setFilters({
       status: '',
@@ -143,9 +131,9 @@ export default function ReportsManagement() {
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="">Todos los estados</option>
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status === 'pending' ? 'Pendiente' : status === 'approved' ? 'Aprobado' : 'Rechazado'}
+              {REPORT_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
@@ -163,9 +151,9 @@ export default function ReportsManagement() {
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="">Todas las razones</option>
-              {reasonOptions.map((reason) => (
-                <option key={reason} value={reason}>
-                  {getReasonLabel(reason)}
+              {REPORT_REASON_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>

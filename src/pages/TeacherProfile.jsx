@@ -371,15 +371,6 @@ export default function TeacherProfile() {
     setReportError(null)
   }
 
-  const handleOpenReportMenu = (ratingId) => {
-    setReportingRatingId(ratingId)
-    setOpenMenuRatingId(null)
-    setShowReportModal(true)
-    setReportReason('')
-    setReportDetails('')
-    setReportError(null)
-  }
-
   const handleContactTeacher = async () => {
     try {
       // Intenta obtener conversaciones existentes
@@ -534,13 +525,14 @@ export default function TeacherProfile() {
                   </label>
                   <textarea
                     value={reportDetails}
-                    onChange={(e) => setReportDetails(e.target.value)}
+                    onChange={(e) => setReportDetails(e.target.value.slice(0, 500))}
                     placeholder="Proporciona más información que nos ayude a entender el problema..."
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     rows="3"
+                    maxLength="500"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Máximo 500 caracteres
+                    {reportDetails.length}/500 caracteres
                   </p>
                 </div>
               </div>
@@ -963,17 +955,18 @@ export default function TeacherProfile() {
                         </div>
                       )}
 
-                      {/* Cierra menú al hacer clic fuera */}
-                      {openMenuRatingId === rating.id && (
-                        <div
-                          className="fixed inset-0 z-0"
-                          onClick={() => setOpenMenuRatingId(null)}
-                        />
-                      )}
                     </>
                   )}
                 </div>
               ))}
+
+              {/* Overlay único - cierra menú al hacer clic fuera */}
+              {openMenuRatingId !== null && (
+                <div
+                  className="fixed inset-0 z-5"
+                  onClick={() => setOpenMenuRatingId(null)}
+                />
+              )}
             </div>
           ) : (
             <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700">

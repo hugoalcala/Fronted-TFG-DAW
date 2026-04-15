@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../hooks/useTheme'
 import adminService from '../services/adminService'
 import { reportService } from '../services/reportService'
+import { getReasonLabel, getStatusBadgeColor, REPORT_STATUS_OPTIONS, REPORT_REASON_OPTIONS } from '../constants/reportConstants'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -55,10 +56,21 @@ export default function AdminDashboard() {
   
   // Notificación toast
   const [notification, setNotification] = useState(null)
-  
+  const notificationTimerRef = useRef(null)
+
   const showNotification = (message, type = 'success') => {
+    // Limpiar timer anterior si existe
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+    
     setNotification({ message, type })
-    setTimeout(() => setNotification(null), 3000)
+    
+    // Crear nuevo timer y guardar en ref
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null)
+      notificationTimerRef.current = null
+    }, 3000)
   }
 
   useEffect(() => {
@@ -66,14 +78,28 @@ export default function AdminDashboard() {
     loadUsers() // Cargar usuarios al inicio también
   }, [])
 
+  // Limpiar timer de notificación al desmontar
+  useEffect(() => {
+    return () => {
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current)
+      }
+    }
+  }, [])
+
+  // Cargar reportes cuando sea necesario
+  useEffect(() => {
+    if (activeTab === 'reports') {
+      loadReports()
+    }
+  }, [activeTab, reportsFilters])
+
+  // Cargar usuarios cuando sea necesario
   useEffect(() => {
     if (activeTab === 'users') {
       loadUsers()
     }
-    if (activeTab === 'reports') {
-      loadReports()
-    }
-  }, [activeTab, searchTerm, roleFilter, currentPage, startDate, endDate, sortOrder, reportsFilters])
+  }, [activeTab, searchTerm, roleFilter, currentPage, startDate, endDate, sortOrder])
 
   const loadAdminData = async () => {
     setLoading(true)
@@ -371,17 +397,6 @@ export default function AdminDashboard() {
       page: 1,
       perPage: 10,
     })
-  }
-
-  const getReasonLabel = (reason) => {
-    const labels = {
-      offensive_content: 'Contenido Ofensivo',
-      spam: 'Spam',
-      fake_review: 'Reseña Falsa',
-      inappropriate: 'Inapropiado',
-      other: 'Otro',
-    }
-    return labels[reason] || reason
   }
 
   const handleLogout = async () => {
@@ -901,9 +916,9 @@ export default function AdminDashboard() {
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         <option value="">Todos los estados</option>
-                        <option value="pending">Pendiente</option>
-                        <option value="approved">Aprobado</option>
-                        <option value="rejected">Rechazado</option>
+                        {REPORT_STATUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -919,11 +934,9 @@ export default function AdminDashboard() {
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         <option value="">Todas las razones</option>
-                        <option value="offensive_content">Contenido Ofensivo</option>
-                        <option value="spam">Spam</option>
-                        <option value="fake_review">Reseña Falsa</option>
-                        <option value="inappropriate">Inapropiado</option>
-                        <option value="other">Otro</option>
+                        {REPORT_REASON_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
                       </select>
                     </div>
 
