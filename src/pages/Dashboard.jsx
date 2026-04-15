@@ -33,6 +33,17 @@ function Dashboard() {
   const [userLikes, setUserLikes] = useState(new Set()) // Posts que el usuario ya le dio like
   const [liking, setLiking] = useState(null) // Post que se está procesando like
   const [sharePostId, setSharePostId] = useState(null) // Post que se está compartiendo
+  const [commentingPostId, setCommentingPostId] = useState(null) // Post siendo comentado
+  const [postComments, setPostComments] = useState({}) // Comentarios por post: { postId: [comments] }
+  const [commentText, setCommentText] = useState('') // Texto del nuevo comentario
+  const [loadingComments, setLoadingComments] = useState({}) // Cargando comentarios por post
+  const [submittingComment, setSubmittingComment] = useState(false) // Enviando comentario
+  const [editingCommentId, setEditingCommentId] = useState(null) // Comentario siendo editado
+  const [editingCommentText, setEditingCommentText] = useState('') // Texto del comentario siendo editado
+  const [deletingCommentId, setDeletingCommentId] = useState(null) // Comentario siendo eliminado
+  const [replyingToCommentId, setReplyingToCommentId] = useState(null) // Respondiendo a qué comentario
+  const [replyText, setReplyText] = useState('') // Texto de la respuesta
+  const [submittingReply, setSubmittingReply] = useState(false) // Enviando respuesta
   const menuTimerRef = useRef(null)
   const fileInputRef = useRef(null)
   const editFileInputRef = useRef(null)
@@ -485,6 +496,338 @@ function Dashboard() {
     return shareOptions
   }
 
+  // Cargar comentarios de un post
+  const handleLoadComments = async (postId) => {
+    if (postComments[postId]) {
+      // Ya estaban cargados, solo abrir modal
+      setCommentingPostId(postId)
+      setCommentText('')
+      return
+    }
+
+    try {
+      setLoadingComments(prev => ({ ...prev, [postId]: true }))
+      const comments = await postsService.getComments(postId)
+      setPostComments(prev => ({ ...prev, [postId]: comments || [] }))
+      setCommentingPostId(postId)
+      setCommentText('')
+    } catch (error) {
+      console.error('Error loading comments:', error)
+      alert('No se pudieron cargar los comentarios')
+    } finally {
+      setLoadingComments(prev => ({ ...prev, [postId]: false }))
+    }
+  }
+
+  // Crear nuevo comentario
+  const handleAddComment = async (postId) => {
+    if (!commentText.trim()) {
+      alert('Por favor escribe un comentario')
+      return
+    }
+
+    try {
+      setSubmittingComment(true)
+      const result = await postsService.commentPost(postId, commentText)
+      
+      if (result) {
+        // Agregar el comentario a la lista local
+        const newComment = result.data || result
+        setPostComments(prev => ({
+          ...prev,
+          [postId]: Array.isArray(prev[postId]) ? [...prev[postId], newComment] : [newComment]
+        }))
+        
+        // Limpiar campo de texto
+        setCommentText('')
+        
+        // Actualizar contador de comentarios en el post
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
+            post.id === postId
+              ? { ...post, comments_count: (post.comments_count || 0) + 1 }
+              : post
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error)
+      alert('No se pudo publicar el comentario')
+    } finally {
+      setSubmittingComment(false)
+    }
+  }
+
+  // Editar comentario
+  const handleEditComment = (comment) => {
+    setEditingCommentId(comment.id)
+    setEditingCommentText(comment.comment)
+  }
+
+  // Guardar comentario editado
+  const handleSaveEditComment = async (postId, commentId) => {
+    if (!editingCommentText.trim()) {
+      alert('Por favor escribe algo')
+      return
+    }
+
+    try {
+      setSubmittingComment(true)
+      const result = await postsService.updateComment(postId, commentId, editingCommentText)
+      
+      if (result) {
+        // Función recursiva para actualizar comentario en cualquier nivel
+        const updateCommentRecursively = (comments) => {
+          return comments.map(c => {
+            if (c.id === commentId) {
+              return { ...c, comment: editingCommentText }
+            }
+            if (c.replies && c.replies.length > 0) {
+              return { ...c, replies: updateCommentRecursively(c.replies) }
+            }
+            return c
+          })
+        }
+        
+        setPostComments(prev => ({
+          ...prev,
+          [postId]: updateCommentRecursively(prev[postId])
+        }))
+        
+        setEditingCommentId(null)
+        setEditingCommentText('')
+      }
+    } catch (error) {
+      console.error('Error updating comment:', error)
+      alert('No se pudo editar el comentario')
+    } finally {
+      setSubmittingComment(false)
+    }
+  }
+
+  // Cancelar edición de comentario
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null)
+    setEditingCommentText('')
+  }
+
+  // Eliminar comentario
+  const handleDeleteComment = async (postId, commentId) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
+      return
+    }
+
+    try {
+      setDeletingCommentId(commentId)
+      const result = await postsService.deleteComment(postId, commentId)
+      
+      if (result && result.success) {
+        // Función recursiva para eliminar comentario en cualquier nivel
+        const deleteCommentRecursively = (comments) => {
+          return comments
+            .filter(c => c.id !== commentId)
+            .map(c => {
+              if (c.replies && c.replies.length > 0) {
+                return { ...c, replies: deleteCommentRecursively(c.replies) }
+              }
+              return c
+            })
+        }
+        
+        setPostComments(prev => ({
+          ...prev,
+          [postId]: deleteCommentRecursively(prev[postId])
+        }))
+        
+        // Actualizar contador de comentarios en el post
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
+            post.id === postId
+              ? { ...post, comments_count: Math.max(0, (post.comments_count || 1) - 1) }
+              : post
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error)
+      alert('No se pudo eliminar el comentario')
+    } finally {
+      setDeletingCommentId(null)
+    }
+  }
+
+  // Responder a un comentario
+  const handleReplyComment = async (postId, parentCommentId) => {
+    if (!replyText.trim()) {
+      alert('Por favor escribe una respuesta')
+      return
+    }
+
+    try {
+      setSubmittingReply(true)
+      const result = await postsService.commentPost(postId, replyText, parentCommentId)
+      
+      if (result) {
+        // Agregar la respuesta al comentario padre
+        const newReply = result.data || result
+        setPostComments(prev => ({
+          ...prev,
+          [postId]: prev[postId].map(c => {
+            if (c.id === parentCommentId) {
+              return {
+                ...c,
+                replies: [...(c.replies || []), newReply]
+              }
+            }
+            return c
+          })
+        }))
+        
+        setReplyingToCommentId(null)
+        setReplyText('')
+      }
+    } catch (error) {
+      console.error('Error replying to comment:', error)
+      alert('No se pudo publicar la respuesta')
+    } finally {
+      setSubmittingReply(false)
+    }
+  }
+
+  // Renderizar un comentario con sus respuestas (recursivo)
+  const renderComment = (comment, depth = 0) => (
+    <div key={comment.id} className={`flex gap-3 pb-3 ${depth > 0 ? 'ml-6 pl-3 border-l-2 border-gray-200 dark:border-gray-700' : ''}`}>
+      <div className={`${depth > 0 ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs flex-shrink-0 overflow-hidden border-2 border-blue-200 dark:border-blue-800`}>
+        {comment.avatar_url ? (
+          <img src={comment.avatar_url} alt={comment.author} className="w-full h-full object-cover" />
+        ) : (
+          <span>{comment.avatar || '👤'}</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2">
+            <p className={`font-bold text-gray-900 dark:text-white ${depth > 0 ? 'text-xs' : 'text-sm'}`}>
+              {comment.author || comment.user?.name}
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              {comment.timestamp || 'Recientemente'}
+            </p>
+          </div>
+          
+          {/* Botones de editar/eliminar - solo para el propietario */}
+          {(Number(user?.id) === Number(comment.user_id) || Number(user?.id) === Number(comment.user?.id)) && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleEditComment(comment)}
+                className="text-xs px-1.5 py-0.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors cursor-pointer"
+                title="Editar"
+              >
+                ✏️
+              </button>
+              <button
+                onClick={() => handleDeleteComment(commentingPostId, comment.id)}
+                disabled={deletingCommentId === comment.id}
+                className="text-xs px-1.5 py-0.5 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors disabled:opacity-50 cursor-pointer"
+                title="Eliminar"
+              >
+                🗑️
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Mostrar comentario o campo de edición */}
+        {editingCommentId === comment.id ? (
+          <div className="mt-2">
+            <textarea
+              value={editingCommentText}
+              onChange={(e) => setEditingCommentText(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none text-sm"
+              rows="2"
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => handleSaveEditComment(commentingPostId, comment.id)}
+                disabled={submittingComment || !editingCommentText.trim()}
+                className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={handleCancelEditComment}
+                className="px-2 py-1 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded text-xs hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className={`text-gray-700 dark:text-gray-300 break-words ${depth > 0 ? 'text-xs' : 'text-sm'}`}>
+              {comment.comment}
+            </p>
+            
+            {/* Botón de responder */}
+            {depth < 2 && (
+              <button
+                onClick={() => setReplyingToCommentId(comment.id)}
+                className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Responder
+              </button>
+            )}
+          </>
+        )}
+        
+        {/* Campo de respuesta */}
+        {replyingToCommentId === comment.id && (
+          <div className="mt-2 mb-3 flex gap-2">
+            <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs flex-shrink-0 overflow-hidden border-2 border-blue-200 dark:border-blue-800">
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                <span>{(user?.name || 'U').charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            <div className="flex-1 flex gap-1">
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Escribe tu respuesta..."
+                className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none text-xs"
+                rows="1"
+              />
+              <button
+                onClick={() => handleReplyComment(commentingPostId, comment.id)}
+                disabled={submittingReply || !replyText.trim()}
+                className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+              >
+                ✓
+              </button>
+              <button
+                onClick={() => {
+                  setReplyingToCommentId(null)
+                  setReplyText('')
+                }}
+                className="px-2 py-1 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded text-xs hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Renderizar respuestas recursivamente */}
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {comment.replies.map(reply => renderComment(reply, depth + 1))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -730,7 +1073,10 @@ function Dashboard() {
                         </button>
                       )
                     })()}
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-semibold">
+                    <button 
+                      onClick={() => handleLoadComments(post.id)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 transition-colors font-semibold"
+                    >
                       💬 {post.comments_count || 0}
                     </button>
                     <button 
@@ -922,6 +1268,132 @@ function Dashboard() {
               >
                 Cerrar
               </button>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Modal de Comentarios */}
+      {commentingPostId && (() => {
+        const postWithComments = posts.find(p => p.id === commentingPostId)
+        const comments = postComments[commentingPostId] || []
+        const isLoading = loadingComments[commentingPostId]
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 p-6 max-h-screen overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  💬 Comentarios
+                </h3>
+                <button
+                  onClick={() => {
+                    setCommentingPostId(null)
+                    setCommentText('')
+                  }}
+                  className="text-2xl text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Post Original */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-sm flex-shrink-0 overflow-hidden border-2 border-blue-200 dark:border-blue-800">
+                    {postWithComments?.avatar_url ? (
+                      <img src={postWithComments.avatar_url} alt={postWithComments.author} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{postWithComments?.avatar || '👤'}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 dark:text-white text-sm">
+                      {postWithComments?.author || postWithComments?.user?.name}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {postWithComments?.timestamp || 'Recientemente'}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 text-sm">
+                  {postWithComments?.content}
+                </p>
+              </div>
+
+              {/* Crear Comentario */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
+                {!commentText ? (
+                  <div className="flex gap-2 items-end">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs flex-shrink-0 overflow-hidden border-2 border-blue-200 dark:border-blue-800">
+                      {user?.avatar_url ? (
+                        <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{(user?.name || 'U').charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Añade un comentario..."
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition-all"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex gap-2 items-start">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs flex-shrink-0 overflow-hidden border-2 border-blue-200 dark:border-blue-800 mt-2">
+                      {user?.avatar_url ? (
+                        <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{(user?.name || 'U').charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 flex gap-2">
+                      <textarea
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="¿Qué piensas?"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none text-sm"
+                        rows="2"
+                      />
+                      <div className="flex gap-2 flex-col">
+                        <button
+                          onClick={() => handleAddComment(commentingPostId)}
+                          disabled={submittingComment || !commentText.trim()}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {submittingComment ? '...' : '✓'}
+                        </button>
+                        <button
+                          onClick={() => setCommentText('')}
+                          className="px-3 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium text-sm"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Lista de Comentarios */}
+              <div className="space-y-2">
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900 dark:border-blue-400 mx-auto mb-2"></div>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">Cargando comentarios...</p>
+                  </div>
+                ) : comments.length > 0 ? (
+                  <div className="space-y-3 pb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    {comments.map((comment) => renderComment(comment))}
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-600 dark:text-gray-400 py-8 text-sm">
+                    No hay comentarios todavía. ¡Sé el primero!
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )

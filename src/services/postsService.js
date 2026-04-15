@@ -127,9 +127,14 @@ export const postsService = {
     }
   },
 
-  // Comentar un post
-  async commentPost(postId, comment) {
+  // Comentar un post (o responder a un comentario)
+  async commentPost(postId, comment, parentCommentId = null) {
     try {
+      const body = { comment }
+      if (parentCommentId) {
+        body.parent_comment_id = parentCommentId
+      }
+
       const response = await fetch(
         `${API_BASE_URL}/posts/${postId}/comments`,
         {
@@ -139,7 +144,7 @@ export const postsService = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
-          body: JSON.stringify({ comment }),
+          body: JSON.stringify(body),
         }
       )
 
@@ -274,6 +279,67 @@ export const postsService = {
     } catch (error) {
       console.error('❌ Error fetching liked posts:', error)
       return []
+    }
+  },
+
+  // Editar un comentario
+  async updateComment(postId, commentId, comment) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/posts/${postId}/comments/${commentId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ comment }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to update comment: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('✅ Comment updated:', data)
+      return data.data || data
+
+    } catch (error) {
+      console.error('❌ Error updating comment:', error)
+      throw error
+    }
+  },
+
+  // Eliminar un comentario
+  async deleteComment(postId, commentId) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/posts/${postId}/comments/${commentId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to delete comment: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('✅ Comment deleted:', data)
+      return data
+
+    } catch (error) {
+      console.error('❌ Error deleting comment:', error)
+      throw error
     }
   },
 }
