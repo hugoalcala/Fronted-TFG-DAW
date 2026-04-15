@@ -82,7 +82,7 @@ const [postComments, setPostComments] = useState({}) // Hierarchical structure
 ## 🚀 How to Test
 
 ### 1. Create Main Comment
-```
+```text
 1. Go to Dashboard
 2. Click comment icon on any post
 3. Type comment in small input field
@@ -92,7 +92,7 @@ const [postComments, setPostComments] = useState({}) // Hierarchical structure
 ```
 
 ### 2. Create Reply (First Level)
-```
+```text
 1. Hover over any comment
 2. Click "Responder" button
 3. Small reply input appears below comment
@@ -102,7 +102,7 @@ const [postComments, setPostComments] = useState({}) // Hierarchical structure
 ```
 
 ### 3. Create Reply to Reply (Second Level)
-```
+```text
 1. Hover over a reply (first-level nested comment)
 2. Click "Responder" button
 3. Reply input appears
@@ -112,7 +112,7 @@ const [postComments, setPostComments] = useState({}) // Hierarchical structure
 ```
 
 ### 4. Edit Comment/Reply
-```
+```text
 1. Hover over your own comment
 2. Click ✏️ button
 3. Textarea appears with current text

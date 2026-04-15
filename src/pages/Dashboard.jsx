@@ -376,17 +376,28 @@ function Dashboard() {
       setEditLoading(true)
       await postsService.updatePost(editingPostId, editContent, editFile)
       
-      // Actualizar post en la lista local
-      const updatedPost = posts.find(p => p.id === editingPostId)
-      if (editFile && editFilePreview && editFileType === 'image') {
-        updatedPost.file_url = editFilePreview
+      // Construir objeto actualizado con cambios completos
+      const updatedPostData = {
+        content: editContent
+      }
+      
+      // Manejar cambios de archivo
+      if (editFile) {
+        // Nuevo archivo
+        updatedPostData.file_type = editFileType
+        updatedPostData.file_name = editFileName
+        updatedPostData.file_url = editFilePreview || null
+      } else {
+        // Sin archivo - se eliminó
+        updatedPostData.file_url = null
+        updatedPostData.file_type = null
+        updatedPostData.file_name = null
       }
       
       setPosts(posts.map(post =>
         post.id === editingPostId ? { 
-          ...post, 
-          content: editContent,
-          ...(editFile && editFileType === 'image' && editFilePreview && { file_url: editFilePreview })
+          ...post,
+          ...updatedPostData
         } : post
       ))
       
@@ -619,35 +630,33 @@ function Dashboard() {
 
     try {
       setDeletingCommentId(commentId)
-      const result = await postsService.deleteComment(postId, commentId)
+      await postsService.deleteComment(postId, commentId)
       
-      if (result && result.success) {
-        // Función recursiva para eliminar comentario en cualquier nivel
-        const deleteCommentRecursively = (comments) => {
-          return comments
-            .filter(c => c.id !== commentId)
-            .map(c => {
-              if (c.replies && c.replies.length > 0) {
-                return { ...c, replies: deleteCommentRecursively(c.replies) }
-              }
-              return c
-            })
-        }
-        
-        setPostComments(prev => ({
-          ...prev,
-          [postId]: deleteCommentRecursively(prev[postId])
-        }))
-        
-        // Actualizar contador de comentarios en el post
-        setPosts(prevPosts =>
-          prevPosts.map(post =>
-            post.id === postId
-              ? { ...post, comments_count: Math.max(0, (post.comments_count || 1) - 1) }
-              : post
-          )
-        )
+      // Si no hay error, proceder a eliminar - función recursiva para eliminar comentario en cualquier nivel
+      const deleteCommentRecursively = (comments) => {
+        return comments
+          .filter(c => c.id !== commentId)
+          .map(c => {
+            if (c.replies && c.replies.length > 0) {
+              return { ...c, replies: deleteCommentRecursively(c.replies) }
+            }
+            return c
+          })
       }
+      
+      setPostComments(prev => ({
+        ...prev,
+        [postId]: deleteCommentRecursively(prev[postId])
+      }))
+      
+      // Actualizar contador de comentarios en el post
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? { ...post, comments_count: Math.max(0, (post.comments_count || 1) - 1) }
+            : post
+        )
+      )
     } catch (error) {
       console.error('Error deleting comment:', error)
       alert('No se pudo eliminar el comentario')
@@ -668,19 +677,30 @@ function Dashboard() {
       const result = await postsService.commentPost(postId, replyText, parentCommentId)
       
       if (result) {
-        // Agregar la respuesta al comentario padre
+        // Agregar la respuesta al comentario padre - búsqueda recursiva
         const newReply = result.data || result
-        setPostComments(prev => ({
-          ...prev,
-          [postId]: prev[postId].map(c => {
+        
+        const insertReplyIntoTree = (comments) => {
+          return comments.map(c => {
             if (c.id === parentCommentId) {
               return {
                 ...c,
                 replies: [...(c.replies || []), newReply]
               }
             }
+            if (c.replies && c.replies.length > 0) {
+              return {
+                ...c,
+                replies: insertReplyIntoTree(c.replies)
+              }
+            }
             return c
           })
+        }
+        
+        setPostComments(prev => ({
+          ...prev,
+          [postId]: insertReplyIntoTree(prev[postId])
         }))
         
         setReplyingToCommentId(null)

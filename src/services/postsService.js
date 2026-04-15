@@ -333,6 +333,12 @@ export const postsService = {
         throw new Error(errorData.message || `Failed to delete comment: ${response.status}`)
       }
 
+      // Manejar respuestas sin contenido (204 No Content)
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        console.log('✅ Comment deleted')
+        return { success: true }
+      }
+
       const data = await response.json()
       console.log('✅ Comment deleted:', data)
       return data
