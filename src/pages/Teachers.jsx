@@ -56,7 +56,7 @@ export default function Teachers() {
           filters.search = searchTerm
         }
 
-        const data = await teachersService.getTeachers(filters)
+        const data = await teachersService.getTeachersWithRatings(filters)
 
         if (currentRequestId !== requestIdRef.current) {
           return
@@ -225,10 +225,32 @@ export default function Teachers() {
 
                 {/* Rating and Students */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-1">
-                    <span className="text-yellow-500">⭐</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map((i) => {
+                        const rating = teacher.rating || 0
+                        const fullStars = Math.floor(rating)
+                        const hasHalfStar = rating % 1 >= 0.5
+                        
+                        const isFull = i <= fullStars
+                        const isHalf = i === fullStars + 1 && hasHalfStar && teacher.rating
+                        
+                        return (
+                          <span
+                            key={i}
+                            className={`text-lg ${
+                              isFull ? 'text-yellow-400' :
+                              isHalf ? 'text-yellow-400 opacity-50' :
+                              'text-gray-300 dark:text-gray-600'
+                            }`}
+                          >
+                            {isFull || isHalf ? '★' : '☆'}
+                          </span>
+                        )
+                      })}
+                    </div>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {teacher.rating ?? 'N/A'}
+                      {teacher.rating ? teacher.rating.toFixed(1) : 'N/A'}
                     </span>
                   </div>
                   <span className="text-xs text-gray-600 dark:text-gray-400">
@@ -239,7 +261,7 @@ export default function Teachers() {
                 {/* Price and Button */}
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-blue-600 dark:text-blue-400">
-                    {teacher.price_per_hour ?? teacher.price ?? 'Precio no disponible'}
+                    {teacher.price_per_hour ? `${teacher.price_per_hour}€` : teacher.price ? `${teacher.price}€` : 'Precio no disponible'}
                   </span>
                   <button 
                     onClick={() => handleContactTeacher(teacher.id)}

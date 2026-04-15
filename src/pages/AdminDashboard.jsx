@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../hooks/useTheme'
 import adminService from '../services/adminService'
+import { reportService } from '../services/reportService'
+import { getReasonLabel, getStatusBadgeColor, REPORT_STATUS_OPTIONS, REPORT_REASON_OPTIONS } from '../constants/reportConstants'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -33,16 +35,42 @@ export default function AdminDashboard() {
   const [endDate, setEndDate] = useState('')
   const [sortOrder, setSortOrder] = useState('desc') // desc = más reciente primero, asc = más antiguo primero
   
+  // Estados para denuncias
+  const [reports, setReports] = useState([])
+  const [loadingReports, setLoadingReports] = useState(false)
+  const [reportsFilters, setReportsFilters] = useState({
+    status: 'pending', // Solo mostrar denuncias pendientes por defecto
+    reason: '',
+    page: 1,
+    perPage: 10,
+  })
+  const [reportsTotalPages, setReportsTotalPages] = useState(1)
+  const [selectedReport, setSelectedReport] = useState(null)
+  const [showReportDetailModal, setShowReportDetailModal] = useState(false)
+  const [reportAdminNotes, setReportAdminNotes] = useState('')
+  const [reportActionLoading, setReportActionLoading] = useState(false)
+  
   // Modal de edición
   const [editingUser, setEditingUser] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
   
   // Notificación toast
   const [notification, setNotification] = useState(null)
-  
+  const notificationTimerRef = useRef(null)
+
   const showNotification = (message, type = 'success') => {
+    // Limpiar timer anterior si existe
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+    
     setNotification({ message, type })
-    setTimeout(() => setNotification(null), 3000)
+    
+    // Crear nuevo timer y guardar en ref
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null)
+      notificationTimerRef.current = null
+    }, 3000)
   }
 
   useEffect(() => {
@@ -50,6 +78,23 @@ export default function AdminDashboard() {
     loadUsers() // Cargar usuarios al inicio también
   }, [])
 
+  // Limpiar timer de notificación al desmontar
+  useEffect(() => {
+    return () => {
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current)
+      }
+    }
+  }, [])
+
+  // Cargar reportes cuando sea necesario
+  useEffect(() => {
+    if (activeTab === 'reports') {
+      loadReports()
+    }
+  }, [activeTab, reportsFilters])
+
+  // Cargar usuarios cuando sea necesario
   useEffect(() => {
     if (activeTab === 'users') {
       loadUsers()
@@ -275,6 +320,85 @@ export default function AdminDashboard() {
     setCurrentPage(1)
   }
 
+  // Funciones para denuncias
+  const loadReports = async () => {
+    setLoadingReports(true)
+    try {
+      console.log('📋 Cargando denuncias con filtros:', reportsFilters)
+      const response = await reportService.getAllReports(reportsFilters)
+      console.log('📋 Respuesta del servidor:', response)
+      
+      // El backend devuelve: { success: true, data: [...], total: X, per_page: Y, current_page: Z, last_page: W }
+      const reportsData = Array.isArray(response) ? response : (response.data || [])
+      setReports(reportsData)
+      
+      if (response.last_page || response.total) {
+        setReportsTotalPages(response.last_page || 1)
+      } else {
+        setReportsTotalPages(1)
+      }
+      
+      console.log('✅ Denuncias cargadas:', reportsData.length)
+    } catch (err) {
+      console.error('❌ Error loading reports:', err)
+      showNotification('Error al cargar denuncias', 'error')
+      setReports([])
+    } finally {
+      setLoadingReports(false)
+    }
+  }
+
+  const openReportDetail = async (report) => {
+    try {
+      const details = await reportService.getReportDetails(report.id)
+      setSelectedReport(details)
+      setShowReportDetailModal(true)
+    } catch (err) {
+      showNotification('Error al cargar detalles de la denuncia', 'error')
+    }
+  }
+
+  const handleApproveReport = async (reportId) => {
+    try {
+      setReportActionLoading(true)
+      await reportService.approveReport(reportId, reportAdminNotes)
+      showNotification('✅ Denuncia aprobada correctamente', 'success')
+      setShowReportDetailModal(false)
+      setReportAdminNotes('')
+      setSelectedReport(null)
+      loadReports()
+    } catch (err) {
+      showNotification(err.message || 'Error al aprobar denuncia', 'error')
+    } finally {
+      setReportActionLoading(false)
+    }
+  }
+
+  const handleRejectReport = async (reportId) => {
+    try {
+      setReportActionLoading(true)
+      await reportService.rejectReport(reportId, reportAdminNotes)
+      showNotification('✅ Denuncia rechazada correctamente', 'success')
+      setShowReportDetailModal(false)
+      setReportAdminNotes('')
+      setSelectedReport(null)
+      loadReports()
+    } catch (err) {
+      showNotification(err.message || 'Error al rechazar denuncia', 'error')
+    } finally {
+      setReportActionLoading(false)
+    }
+  }
+
+  const clearReportsFilters = () => {
+    setReportsFilters({
+      status: 'pending', // Volver a mostrar solo pendientes
+      reason: '',
+      page: 1,
+      perPage: 10,
+    })
+  }
+
   const handleLogout = async () => {
     await logout()
     navigate('/login')
@@ -423,6 +547,16 @@ export default function AdminDashboard() {
               }`}
             >
               👥 Usuarios
+            </button>
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === 'reports'
+                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-400 border-b-2 border-purple-600'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              🚩 Denuncias
             </button>
           </div>
 
@@ -761,6 +895,185 @@ export default function AdminDashboard() {
                 )}
               </div>
             )}
+
+            {/* Reports Tab */}
+            {activeTab === 'reports' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Gestión de Denuncias</h2>
+                
+                {/* Filtros */}
+                <div className="mb-6 space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Estado
+                      </label>
+                      <select
+                        value={reportsFilters.status}
+                        onChange={(e) =>
+                          setReportsFilters({ ...reportsFilters, status: e.target.value, page: 1 })
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="">Todos los estados</option>
+                        {REPORT_STATUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Razón
+                      </label>
+                      <select
+                        value={reportsFilters.reason}
+                        onChange={(e) =>
+                          setReportsFilters({ ...reportsFilters, reason: e.target.value, page: 1 })
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="">Todas las razones</option>
+                        {REPORT_REASON_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-end">
+                      <button
+                        onClick={clearReportsFilters}
+                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium whitespace-nowrap"
+                      >
+                        🔄 Limpiar Filtros
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Indicador de filtros activos */}
+                  {(reportsFilters.status || reportsFilters.reason) && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span>Filtros activos:</span>
+                      {reportsFilters.status && <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 rounded">{reportsFilters.status === 'pending' ? '⏳' : reportsFilters.status === 'approved' ? '✅' : '❌'} {reportsFilters.status === 'pending' ? 'Pendiente' : reportsFilters.status === 'approved' ? 'Aprobado' : 'Rechazado'}</span>}
+                      {reportsFilters.reason && <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 rounded">📋 {getReasonLabel(reportsFilters.reason)}</span>}
+                    </div>
+                  )}
+                </div>
+
+                {/* Loading */}
+                {loadingReports ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Cargando denuncias...</p>
+                  </div>
+                ) : reports.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🚩</div>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {reportsFilters.status || reportsFilters.reason ? 'No se encontraron denuncias con esos filtros' : 'No hay denuncias registradas'}
+                    </p>
+                    <button
+                      onClick={loadReports}
+                      className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                    >
+                      🔄 Recargar
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Tabla de denuncias */}
+                    <div className="overflow-x-auto mb-6">
+                      <table className="w-full">
+                        <thead className="bg-gray-100 dark:bg-gray-800">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              ID
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Usuario
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Razón
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Estado
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Fecha
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+                              Acciones
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {reports.map((report) => (
+                            <tr key={report.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">
+                                #{report.id}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                                {report.reported_user?.name || 'Desconocido'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                {getReasonLabel(report.reason)}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                  report.status === 'pending' ? 
+                                    'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                                  report.status === 'approved' ?
+                                    'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                                  'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                                }`}>
+                                  {report.status === 'pending' ? '⏳ Pendiente' : report.status === 'approved' ? '✅ Aprobado' : '❌ Rechazado'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                {new Date(report.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <button
+                                  onClick={() => openReportDetail(report)}
+                                  className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                >
+                                  Ver Detalles
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Paginación */}
+                    {reportsTotalPages > 1 && (
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Página {reportsFilters.page} de {reportsTotalPages}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setReportsFilters({ ...reportsFilters, page: Math.max(1, reportsFilters.page - 1) })}
+                            disabled={reportsFilters.page === 1}
+                            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            ← Anterior
+                          </button>
+                          <button
+                            onClick={() => setReportsFilters({ ...reportsFilters, page: Math.min(reportsTotalPages, reportsFilters.page + 1) })}
+                            disabled={reportsFilters.page === reportsTotalPages}
+                            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Siguiente →
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -830,6 +1143,110 @@ export default function AdminDashboard() {
               >
                 Cancelar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal para Denuncias */}
+      {showReportDetailModal && selectedReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+              Detalles de la Denuncia
+            </h3>
+
+            <div className="space-y-4 mb-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">ID</label>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">#{selectedReport.id}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">Estado</label>
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-1 ${
+                    selectedReport.status === 'pending' ? 
+                      'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                    selectedReport.status === 'approved' ?
+                      'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                    'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                  }`}>
+                    {selectedReport.status === 'pending' ? '⏳ Pendiente' : selectedReport.status === 'approved' ? '✅ Aprobado' : '❌ Rechazado'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">Usuario Denunciado</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {selectedReport.reported_user?.name || 'Desconocido'} ({selectedReport.reported_user?.email || 'Sin email'})
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">Razón</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{getReasonLabel(selectedReport.reason)}</p>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">Descripción</label>
+                <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  {selectedReport.description || 'Sin descripción'}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">Fecha</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {new Date(selectedReport.created_at).toLocaleDateString()} - {new Date(selectedReport.created_at).toLocaleTimeString()}
+                </p>
+              </div>
+
+              {selectedReport.status === 'pending' && (
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold mb-2">
+                    Notas del Administrador
+                  </label>
+                  <textarea
+                    value={reportAdminNotes}
+                    onChange={(e) => setReportAdminNotes(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    rows="3"
+                    placeholder="Agregar notas (opcional)"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-end border-t border-gray-200 dark:border-gray-700 pt-4">
+              <button
+                onClick={() => {
+                  setShowReportDetailModal(false)
+                  setReportAdminNotes('')
+                }}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors font-medium"
+              >
+                Cerrar
+              </button>
+
+              {selectedReport.status === 'pending' && (
+                <>
+                  <button
+                    onClick={() => handleRejectReport(selectedReport.id)}
+                    disabled={reportActionLoading}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {reportActionLoading ? '⏳ Procesando...' : '❌ Rechazar'}
+                  </button>
+                  <button
+                    onClick={() => handleApproveReport(selectedReport.id)}
+                    disabled={reportActionLoading}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {reportActionLoading ? '⏳ Procesando...' : '✅ Aprobar'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

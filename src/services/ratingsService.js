@@ -39,11 +39,11 @@ export const ratingsService = {
       )
 
       if (!response.ok) {
-        throw new Error('Failed to fetch ratings')
+        throw new Error(`HTTP ${response.status}: Failed to fetch ratings`)
       }
 
-      const data = await response.json()
-      return data.data || data
+      const data = await safeParseJSON(response)
+      return data?.data || data || []
     } catch (error) {
       console.error('❌ Error fetching ratings:', error)
       throw error
@@ -67,12 +67,12 @@ export const ratingsService = {
       )
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to create rating')
+        const errorData = await safeParseJSON(response)
+        throw new Error(errorData?.message || `HTTP ${response.status}: Failed to create rating`)
       }
 
-      const data = await response.json()
-      return data.data || data
+      const data = await safeParseJSON(response)
+      return data?.data || data || { success: true }
     } catch (error) {
       console.error('❌ Error creating rating:', error)
       throw error
@@ -162,4 +162,34 @@ export const ratingsService = {
       throw error
     }
   },
+
+  // Denunciar una reseña
+  async reportRating(teacherId, ratingId, reportData) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/teachers/${teacherId}/ratings/${ratingId}/report`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(reportData),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await safeParseJSON(response)
+        throw new Error(errorData?.message || 'Failed to report rating')
+      }
+
+      const data = await safeParseJSON(response)
+      return data?.data || data || { success: true }
+    } catch (error) {
+      console.error('❌ Error reporting rating:', error)
+      throw error
+    }
+  },
 }
+
