@@ -3,14 +3,7 @@
   publish = "dist"
 
 [build.environment]
-  # Para desarrollo local, usa .env.local
-  # Para producción en Netlify, agrega las variables en Netlify Dashboard:
-  # Site settings → Build & deploy → Environment → Environment variables
-  
-  NODE_VERSION = "18.17.0"
-  NODE_ENV = "production"
-  # VITE_API_BASE_URL = https://api-tuapp.render.com/api (agregar en Netlify Dashboard)
-  # VITE_GOOGLE_CLIENT_ID = (agregar en Netlify Dashboard)
+  NODE_VERSION = "20"
 
 # Redirige todas las rutas a index.html para React Router
 [[redirects]]
