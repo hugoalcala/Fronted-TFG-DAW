@@ -10,7 +10,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { isDark, toggleTheme } = useTheme()
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('pending')
   const [pendingTeachers, setPendingTeachers] = useState([])
   const [users, setUsers] = useState([])
   const [stats, setStats] = useState({
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
         setReportsTotalPages(1)
       }
       
-      console.log('✅ Denuncias cargadas:', reportsData.length)
+      console.log('Denuncias cargadas:', reportsData.length)
     } catch (err) {
       console.error('❌ Error loading reports:', err)
       showNotification('Error al cargar denuncias', 'error')
@@ -362,7 +362,7 @@ export default function AdminDashboard() {
     try {
       setReportActionLoading(true)
       await reportService.approveReport(reportId, reportAdminNotes)
-      showNotification('✅ Denuncia aprobada correctamente', 'success')
+      showNotification('Denuncia aprobada correctamente', 'success')
       setShowReportDetailModal(false)
       setReportAdminNotes('')
       setSelectedReport(null)
@@ -378,7 +378,7 @@ export default function AdminDashboard() {
     try {
       setReportActionLoading(true)
       await reportService.rejectReport(reportId, reportAdminNotes)
-      showNotification('✅ Denuncia rechazada correctamente', 'success')
+      showNotification('Denuncia rechazada correctamente', 'success')
       setShowReportDetailModal(false)
       setReportAdminNotes('')
       setSelectedReport(null)
@@ -417,14 +417,13 @@ export default function AdminDashboard() {
 
   if (error && !stats.totalUsers) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center max-w-md">
-          <div className="text-6xl mb-4">⚠️</div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Error al cargar datos</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
           <button
             onClick={loadAdminData}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors"
           >
             Reintentar
           </button>
@@ -434,14 +433,14 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-purple-50 to-purple-100 dark:from-gray-900 dark:via-purple-900/20 dark:to-purple-900/30">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Admin Navbar */}
-      <nav className="bg-white dark:bg-gray-900 shadow-md border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
+      <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="text-2xl font-bold text-purple-900 dark:text-purple-400">
-                👑 Panel de Administración
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                Panel de Administración
               </div>
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 Bienvenido, {user?.name}
@@ -457,7 +456,7 @@ export default function AdminDashboard() {
               </button>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded hover:bg-red-600 dark:hover:bg-red-700 transition-colors text-sm font-medium"
               >
                 Cerrar Sesión
               </button>
@@ -469,71 +468,49 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Usuarios</p>
-                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{stats.totalUsers}</p>
-              </div>
-              <div className="text-4xl">👥</div>
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6">
+            <div>
+              <p className="text-blue-600 dark:text-blue-400 text-sm font-medium">Usuarios</p>
+              <p className="text-3xl font-bold text-blue-900 dark:text-blue-200 mt-2">{stats.totalUsers}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Profesores</p>
-                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{stats.totalTeachers}</p>
-              </div>
-              <div className="text-4xl">👨‍🏫</div>
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-6">
+            <div>
+              <p className="text-green-600 dark:text-green-400 text-sm font-medium">Profesores</p>
+              <p className="text-3xl font-bold text-green-900 dark:text-green-200 mt-2">{stats.totalTeachers}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-yellow-200 dark:border-yellow-800 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Pendientes</p>
-                <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{stats.pendingApplications}</p>
-              </div>
-              <div className="text-4xl">⏳</div>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-6">
+            <div>
+              <p className="text-amber-600 dark:text-amber-400 text-sm font-medium">Pendientes</p>
+              <p className="text-3xl font-bold text-amber-900 dark:text-amber-200 mt-2">{stats.pendingApplications}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Posts</p>
-                <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-2">{stats.totalPosts}</p>
-              </div>
-              <div className="text-4xl">📝</div>
+          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 p-6">
+            <div>
+              <p className="text-purple-600 dark:text-purple-400 text-sm font-medium">Posts</p>
+              <p className="text-3xl font-bold text-purple-900 dark:text-purple-200 mt-2">{stats.totalPosts}</p>
             </div>
           </div>
         </div>
 
         {/* Tabs Navigation */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 mb-6">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 mb-6">
           <div className="flex border-b border-gray-200 dark:border-gray-800">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'overview'
-                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-400 border-b-2 border-purple-600'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              📊 Resumen
-            </button>
             <button
               onClick={() => setActiveTab('pending')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors relative ${
                 activeTab === 'pending'
-                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-400 border-b-2 border-purple-600'
+                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-400 border-b-2 border-amber-600'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              ⏳ Profesores Pendientes
+              Profesores Pendientes
               {stats.pendingApplications > 0 && (
-                <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute top-2 right-2 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {stats.pendingApplications}
                 </span>
               )}
@@ -542,11 +519,11 @@ export default function AdminDashboard() {
               onClick={() => setActiveTab('users')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
                 activeTab === 'users'
-                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-400 border-b-2 border-purple-600'
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-400 border-b-2 border-green-600'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              👥 Usuarios
+              Usuarios
             </button>
             <button
               onClick={() => setActiveTab('reports')}
@@ -556,7 +533,7 @@ export default function AdminDashboard() {
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              🚩 Denuncias
+              Denuncias
             </button>
           </div>
 
@@ -572,18 +549,18 @@ export default function AdminDashboard() {
                       {stats.pendingApplications} solicitudes de profesor esperando aprobación
                     </p>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4">
                     <h3 className="font-bold text-gray-900 dark:text-white mb-2">Acciones Rápidas</h3>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setActiveTab('pending')}
-                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
+                        className="px-4 py-2 bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-700 transition-colors text-sm"
                       >
                         Ver Pendientes
                       </button>
                       <button
                         onClick={() => setActiveTab('users')}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        className="px-4 py-2 bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 transition-colors text-sm"
                       >
                         Gestionar Usuarios
                       </button>
@@ -602,7 +579,6 @@ export default function AdminDashboard() {
                 
                 {pendingTeachers.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4">✅</div>
                     <p className="text-gray-600 dark:text-gray-400">No hay solicitudes pendientes</p>
                   </div>
                 ) : (
@@ -615,8 +591,8 @@ export default function AdminDashboard() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-3">
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-xl">
-                                👤
+                              <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xl text-gray-600 dark:text-gray-300">
+                                
                               </div>
                               <div>
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -652,7 +628,7 @@ export default function AdminDashboard() {
                                   onClick={() => handleViewCertificate(teacher.id)}
                                   className="text-blue-600 dark:text-blue-400 hover:underline text-sm inline-flex items-center gap-2 bg-transparent border-none cursor-pointer"
                                 >
-                                  📄 Ver Certificado/CV
+                                  Ver Certificado/CV
                                 </button>
                               )}
                             </div>
@@ -665,15 +641,15 @@ export default function AdminDashboard() {
                           <div className="flex flex-col gap-2 ml-4">
                             <button
                               onClick={() => handleApproveTeacher(teacher.id)}
-                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium whitespace-nowrap"
+                              className="px-4 py-2 bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 transition-colors text-sm font-medium whitespace-nowrap"
                             >
-                              ✓ Aprobar
+                              Aprobar
                             </button>
                             <button
                               onClick={() => handleRejectTeacher(teacher.id)}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium whitespace-nowrap"
+                              className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors text-sm font-medium whitespace-nowrap"
                             >
-                              ✗ Rechazar
+                              Rechazar
                             </button>
                           </div>
                         </div>
@@ -702,7 +678,7 @@ export default function AdminDashboard() {
                         placeholder="Buscar por nombre o email..."
                         value={searchTerm}
                         onChange={handleSearchChange}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div className="w-full md:w-48">
@@ -712,7 +688,7 @@ export default function AdminDashboard() {
                       <select
                         value={roleFilter}
                         onChange={handleRoleFilterChange}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="all">Todos los roles</option>
                         <option value="student">Estudiantes</option>
@@ -732,7 +708,7 @@ export default function AdminDashboard() {
                         type="date"
                         value={startDate}
                         onChange={handleStartDateChange}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div className="flex-1">
@@ -743,7 +719,7 @@ export default function AdminDashboard() {
                         type="date"
                         value={endDate}
                         onChange={handleEndDateChange}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div className="w-full md:w-56">
@@ -753,7 +729,7 @@ export default function AdminDashboard() {
                       <select
                         value={sortOrder}
                         onChange={handleSortOrderChange}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="desc">Más reciente primero</option>
                         <option value="asc">Más antiguo primero</option>
@@ -762,9 +738,9 @@ export default function AdminDashboard() {
                     <div className="flex items-end">
                       <button
                         onClick={clearFilters}
-                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium whitespace-nowrap"
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded transition-colors font-medium whitespace-nowrap"
                       >
-                        🔄 Limpiar Filtros
+                        Limpiar Filtros
                       </button>
                     </div>
                   </div>
@@ -773,11 +749,11 @@ export default function AdminDashboard() {
                   {(searchTerm || roleFilter !== 'all' || startDate || endDate || sortOrder !== 'desc') && (
                     <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <span>Filtros activos:</span>
-                      {searchTerm && <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">🔍 Búsqueda: "{searchTerm}"</span>}
-                      {roleFilter !== 'all' && <span className="px-2 py-1 bg-green-100 dark:bg-green-900 rounded">👤 Rol: {roleFilter}</span>}
-                      {startDate && <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 rounded">📅 Desde: {startDate}</span>}
-                      {endDate && <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 rounded">📅 Hasta: {endDate}</span>}
-                      {sortOrder !== 'desc' && <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 rounded">↕️ Orden: {sortOrder === 'asc' ? 'Más antiguo primero' : 'Más reciente primero'}</span>}
+                      {searchTerm && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">Búsqueda: "{searchTerm}"</span>}
+                      {roleFilter !== 'all' && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">Rol: {roleFilter}</span>}
+                      {startDate && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">Desde: {startDate}</span>}
+                      {endDate && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">Hasta: {endDate}</span>}
+                      {sortOrder !== 'desc' && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">Orden: {sortOrder === 'asc' ? 'Más antiguo primero' : 'Más reciente primero'}</span>}
                     </div>
                   )}
                 </div>
@@ -790,7 +766,6 @@ export default function AdminDashboard() {
                   </div>
                 ) : users.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4">👥</div>
                     <p className="text-gray-600 dark:text-gray-400">
                       {searchTerm || roleFilter !== 'all' || startDate || endDate || sortOrder !== 'desc'
                         ? 'No se encontraron usuarios con esos filtros' 
@@ -798,9 +773,9 @@ export default function AdminDashboard() {
                     </p>
                     <button
                       onClick={loadUsers}
-                      className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
-                      🔄 Recargar
+                      Recargar
                     </button>
                   </div>
                 ) : (
@@ -913,7 +888,7 @@ export default function AdminDashboard() {
                         onChange={(e) =>
                           setReportsFilters({ ...reportsFilters, status: e.target.value, page: 1 })
                         }
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Todos los estados</option>
                         {REPORT_STATUS_OPTIONS.map((option) => (
@@ -931,7 +906,7 @@ export default function AdminDashboard() {
                         onChange={(e) =>
                           setReportsFilters({ ...reportsFilters, reason: e.target.value, page: 1 })
                         }
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Todas las razones</option>
                         {REPORT_REASON_OPTIONS.map((option) => (
@@ -943,9 +918,9 @@ export default function AdminDashboard() {
                     <div className="flex items-end">
                       <button
                         onClick={clearReportsFilters}
-                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium whitespace-nowrap"
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded transition-colors font-medium whitespace-nowrap"
                       >
-                        🔄 Limpiar Filtros
+                        Limpiar Filtros
                       </button>
                     </div>
                   </div>
@@ -954,7 +929,7 @@ export default function AdminDashboard() {
                   {(reportsFilters.status || reportsFilters.reason) && (
                     <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <span>Filtros activos:</span>
-                      {reportsFilters.status && <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 rounded">{reportsFilters.status === 'pending' ? '⏳' : reportsFilters.status === 'approved' ? '✅' : '❌'} {reportsFilters.status === 'pending' ? 'Pendiente' : reportsFilters.status === 'approved' ? 'Aprobado' : 'Rechazado'}</span>}
+                      {reportsFilters.status && <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">{reportsFilters.status === 'pending' ? 'Pendiente' : reportsFilters.status === 'approved' ? 'Aprobado' : 'Rechazado'}</span>}
                       {reportsFilters.reason && <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 rounded">📋 {getReasonLabel(reportsFilters.reason)}</span>}
                     </div>
                   )}
@@ -968,15 +943,14 @@ export default function AdminDashboard() {
                   </div>
                 ) : reports.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🚩</div>
                     <p className="text-gray-600 dark:text-gray-400">
                       {reportsFilters.status || reportsFilters.reason ? 'No se encontraron denuncias con esos filtros' : 'No hay denuncias registradas'}
                     </p>
                     <button
                       onClick={loadReports}
-                      className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
-                      🔄 Recargar
+                      Recargar
                     </button>
                   </div>
                 ) : (
@@ -1026,7 +1000,7 @@ export default function AdminDashboard() {
                                     'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
                                   'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                                 }`}>
-                                  {report.status === 'pending' ? '⏳ Pendiente' : report.status === 'approved' ? '✅ Aprobado' : '❌ Rechazado'}
+                                  {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : 'Rechazado'}
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
@@ -1095,7 +1069,7 @@ export default function AdminDashboard() {
                   type="text"
                   value={editingUser.name}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
@@ -1107,7 +1081,7 @@ export default function AdminDashboard() {
                   type="email"
                   value={editingUser.email}
                   onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
@@ -1118,7 +1092,7 @@ export default function AdminDashboard() {
                 <select
                   value={editingUser.role}
                   onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="student">Estudiante</option>
                   <option value="teacher">Profesor</option>
@@ -1171,7 +1145,7 @@ export default function AdminDashboard() {
                       'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
                     'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                   }`}>
-                    {selectedReport.status === 'pending' ? '⏳ Pendiente' : selectedReport.status === 'approved' ? '✅ Aprobado' : '❌ Rechazado'}
+                    {selectedReport.status === 'pending' ? 'Pendiente' : selectedReport.status === 'approved' ? 'Aprobado' : 'Rechazado'}
                   </span>
                 </div>
               </div>
@@ -1210,7 +1184,7 @@ export default function AdminDashboard() {
                   <textarea
                     value={reportAdminNotes}
                     onChange={(e) => setReportAdminNotes(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows="3"
                     placeholder="Agregar notas (opcional)"
                   />
@@ -1236,14 +1210,14 @@ export default function AdminDashboard() {
                     disabled={reportActionLoading}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {reportActionLoading ? '⏳ Procesando...' : '❌ Rechazar'}
+                    {reportActionLoading ? 'Procesando...' : 'Rechazar'}
                   </button>
                   <button
                     onClick={() => handleApproveReport(selectedReport.id)}
                     disabled={reportActionLoading}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {reportActionLoading ? '⏳ Procesando...' : '✅ Aprobar'}
+                    {reportActionLoading ? 'Procesando...' : 'Aprobar'}
                   </button>
                 </>
               )}
@@ -1262,9 +1236,6 @@ export default function AdminDashboard() {
               ? 'bg-red-600 text-white'
               : 'bg-blue-600 text-white'
           }`}>
-            <span className="text-2xl">
-              {notification.type === 'success' ? '✅' : notification.type === 'error' ? '❌' : 'ℹ️'}
-            </span>
             <span className="font-medium">{notification.message}</span>
             <button
               onClick={() => setNotification(null)}
