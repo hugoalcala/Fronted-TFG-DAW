@@ -23,7 +23,7 @@ function Home() {
           </button>
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             {isDark ? '☀️' : '🌙'}
           </button>
@@ -31,11 +31,11 @@ function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-white via-blue-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 py-20 px-4">
+      <section className="bg-white dark:bg-gray-900 py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-blue-900 dark:text-white mb-4">
-              Bienvenido a EduConnect
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              EduConnect
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
               La plataforma de educación digital que conecta estudiantes, profesores y comunidades académicas en un único espacio
@@ -61,41 +61,35 @@ function Home() {
       {/* Features Section */}
       <section className="py-20 px-4 bg-gray-50 dark:bg-gray-950">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-semibold text-center text-blue-900 dark:text-white mb-8">
-            ¿Qué es EduConnect?
+          <h2 className="text-2xl font-semibold text-center text-gray-900 dark:text-white mb-8">
+            Características Principales
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm dark:shadow-md border border-gray-200 dark:border-gray-800 p-4 hover:shadow-md dark:hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">🤝</div>
-              <h3 className="text-xl font-medium text-blue-900 dark:text-white mb-2">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 Conexión
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Conecta con estudiantes, profesores y profesionales de tu campo educativo
+                Conecta con estudiantes, profesores y profesionales
               </p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm dark:shadow-md border border-gray-200 dark:border-gray-800 p-4 hover:shadow-md dark:hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">💬</div>
-              <h3 className="text-xl font-medium text-blue-900 dark:text-white mb-2">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 Comunicación
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Interactúa a través de mensajes, comentarios y espacios colaborativos
+                Interactúa a través de mensajes y comentarios
               </p>
             </div>
 
-            {/* Feature 3 */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm dark:shadow-md border border-gray-200 dark:border-gray-800 p-4 hover:shadow-md dark:hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">📚</div>
-              <h3 className="text-xl font-medium text-blue-900 dark:text-white mb-2">
-                Educación Digital
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                Contenido Educativo
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Accede a contenido educativo, cursos y recursos para tu aprendizaje
+                Accede a recursos para tu aprendizaje
               </p>
             </div>
           </div>
@@ -105,70 +99,58 @@ function Home() {
       {/* What you can do Section */}
       <section className="py-20 px-4 bg-white dark:bg-gray-900">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-semibold text-center text-blue-900 dark:text-white mb-8">
-            Qué puedes hacer en EduConnect
+          <h2 className="text-2xl font-semibold text-center text-gray-900 dark:text-white mb-8">
+            Funcionalidades
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm dark:shadow-md border border-gray-200 dark:border-gray-800 p-4 flex items-start gap-4">
-              <span className="text-3xl">✅</span>
-              <div>
-                <h4 className="font-semibold text-blue-900 dark:text-white mb-2">
-                  Registrarte e Iniciar Sesión
-                </h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Crea tu cuenta y accede a toda la plataforma con seguridad
-                </p>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="border border-gray-200 dark:border-gray-800 p-6">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Cuenta
+              </h4>
+              <p className="text-gray-600 dark:text-gray-400">
+                Registrarte e iniciar sesión con seguridad
+              </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm dark:shadow-md border border-gray-200 dark:border-gray-800 p-4 flex items-start gap-4">
-              <span className="text-3xl">✅</span>
-              <div>
-                <h4 className="font-semibold text-blue-900 dark:text-white mb-2">
-                  Publicar Contenido
-                </h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Comparte tus ideas, proyectos y recursos educativos
-                </p>
-              </div>
+            <div className="border border-gray-200 dark:border-gray-800 p-6">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Publicar
+              </h4>
+              <p className="text-gray-600 dark:text-gray-400">
+                Comparte tus ideas y recursos educativos
+              </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm dark:shadow-md border border-gray-200 dark:border-gray-800 p-4 flex items-start gap-4">
-              <span className="text-3xl">✅</span>
-              <div>
-                <h4 className="font-semibold text-blue-900 dark:text-white mb-2">
-                  Interactuar con Otros
-                </h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Comenta, reacciona y colabora con la comunidad
-                </p>
-              </div>
+            <div className="border border-gray-200 dark:border-gray-800 p-6">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Interactuar
+              </h4>
+              <p className="text-gray-600 dark:text-gray-400">
+                Comenta y colabora con la comunidad
+              </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm dark:shadow-md border border-gray-200 dark:border-gray-800 p-4 flex items-start gap-4">
-              <span className="text-3xl">✅</span>
-              <div>
-                <h4 className="font-semibold text-blue-900 dark:text-white mb-2">
-                  Acceder a Contenido Educativo
-                </h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Visualiza cursos, tutoriales y recursos de aprendizaje
-                </p>
-              </div>
+            <div className="border border-gray-200 dark:border-gray-800 p-6">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Aprender
+              </h4>
+              <p className="text-gray-600 dark:text-gray-400">
+                Accede a cursos y recursos de aprendizaje
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-900 to-blue-700 dark:from-blue-400 dark:to-blue-500 py-20 px-4">
+      <section className="bg-gray-100 dark:bg-gray-800 py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl font-semibold text-white mb-4">
-            Únete a nuestra comunidad académica
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+            Comienza Ahora
           </h2>
-          <p className="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
-            Empieza ahora y conecta con miles de estudiantes y educadores
+          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+            Crea tu cuenta y conecta con estudiantes y educadores
           </p>
           <button 
             onClick={() => navigate('/registro')}
