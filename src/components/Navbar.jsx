@@ -41,7 +41,7 @@ export default function Navbar() {
               onClick={() => navigate('/dashboard')}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
             >
-              🏠 Inicio
+              Inicio
             </button>
 
             {/* Búsqueda de Profesores */}
@@ -50,14 +50,14 @@ export default function Navbar() {
                 onClick={() => navigate('/teachers')}
                 className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
               >
-                👨‍🏫 Profesores
+                 Profesores
               </button>
             ) : (
               <button
                 onClick={() => navigate('/my-classes')}
                 className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
               >
-                📚 Mis Clases
+                 Mis Clases
               </button>
             )}
 
@@ -66,7 +66,7 @@ export default function Navbar() {
               onClick={() => navigate('/messages')}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors relative"
             >
-              💬 Mensajes
+               Mensajes
             </button>
 
             {/* Productividad */}
@@ -74,7 +74,7 @@ export default function Navbar() {
               onClick={() => navigate('/productivity')}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
             >
-              🚀 Productividad
+               Productividad
             </button>
 
             {/* Perfil con rol */}
@@ -82,7 +82,7 @@ export default function Navbar() {
               onClick={() => navigate('/profile')}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
             >
-              👤 Perfil
+               Perfil
               {user?.role === 'teacher' && (
                 <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
                   Profesor
@@ -134,7 +134,7 @@ export default function Navbar() {
               }}
               className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             >
-              🏠 Inicio
+               Inicio
             </button>
 
             {user?.role !== 'teacher' ? (
@@ -145,7 +145,7 @@ export default function Navbar() {
                 }}
                 className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
               >
-                👨‍🏫 Profesores
+                 Profesores
               </button>
             ) : (
               <button
@@ -155,7 +155,7 @@ export default function Navbar() {
                 }}
                 className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
               >
-                📚 Mis Clases
+                 Mis Clases
               </button>
             )}
 
@@ -166,7 +166,7 @@ export default function Navbar() {
               }}
               className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             >
-              💬 Mensajes
+               Mensajes
             </button>
 
             <button
@@ -176,7 +176,7 @@ export default function Navbar() {
               }}
               className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             >
-              🚀 Productividad
+              Productividad
             </button>
 
             <button
@@ -186,7 +186,7 @@ export default function Navbar() {
               }}
               className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             >
-              👤 Perfil {user?.role === 'teacher' && <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full ml-2">Profesor</span>}
+               Perfil {user?.role === 'teacher' && <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full ml-2">Profesor</span>}
             </button>
 
             <button

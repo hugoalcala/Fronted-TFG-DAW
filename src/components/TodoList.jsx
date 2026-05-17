@@ -13,9 +13,9 @@ export default function TodoList() {
   const categories = ['general', 'trabajo', 'personal', 'estudio', 'salud']
   const statuses = ['pending', 'in_progress', 'completed']
   const statusLabels = {
-    pending: '⭕ Pendiente',
-    in_progress: '🔄 En Progreso',
-    completed: '✅ Completada',
+    pending: ' Pendiente',
+    in_progress: ' En Progreso',
+    completed: ' Completada',
   }
   const statusColors = {
     pending: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200',
@@ -143,7 +143,7 @@ export default function TodoList() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">📋 Mi Lista de Tareas</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white"> Mi Lista de Tareas</h2>
 
       {/* Estadísticas */}
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -209,7 +209,7 @@ export default function TodoList() {
           disabled={loading || !newTask.trim()}
           className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          ➕ Agregar Tarea
+           Agregar Tarea
         </button>
       </form>
 
@@ -233,7 +233,7 @@ export default function TodoList() {
               : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300'
           }`}
         >
-          ⭕ Pendientes ({tasks.filter((t) => t.status === 'pending' || (!t.completed && t.status !== 'in_progress')).length})
+           Pendientes ({tasks.filter((t) => t.status === 'pending' || (!t.completed && t.status !== 'in_progress')).length})
         </button>
         <button
           onClick={() => setFilter('in_progress')}
@@ -243,7 +243,7 @@ export default function TodoList() {
               : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300'
           }`}
         >
-          🔄 En Progreso ({tasks.filter((t) => t.status === 'in_progress').length})
+          En Progreso ({tasks.filter((t) => t.status === 'in_progress').length})
         </button>
         <button
           onClick={() => setFilter('completed')}
@@ -253,7 +253,7 @@ export default function TodoList() {
               : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300'
           }`}
         >
-          ✅ Completadas ({tasks.filter((t) => t.status === 'completed' || t.completed).length})
+          Completadas ({tasks.filter((t) => t.status === 'completed' || t.completed).length})
         </button>
       </div>
 
@@ -261,7 +261,7 @@ export default function TodoList() {
       <div className="space-y-2">
         {filteredTasks.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            {loading ? '⏳ Cargando tareas...' : '✨ No hay tareas aquí'}
+            {loading ? ' Cargando tareas...' : ' No hay tareas aquí'}
           </div>
         ) : (
           filteredTasks.map((task) => (
@@ -303,12 +303,12 @@ export default function TodoList() {
                 <div className="flex gap-2 mt-1 flex-wrap items-center text-xs">
                   {task.started_at && (
                     <span className="text-gray-500 dark:text-gray-400">
-                      📅 Iniciada: {formatDate(task.started_at)}
+                     Iniciada: {formatDate(task.started_at)}
                     </span>
                   )}
                   {task.due_date && (
                     <span className={`${isOverdue(task) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>
-                      ⏰ Límite: {formatDate(task.due_date)} {isOverdue(task) && '⚠️'}
+                       Límite: {formatDate(task.due_date)} {isOverdue(task) && '⚠️'}
                     </span>
                   )}
                 </div>

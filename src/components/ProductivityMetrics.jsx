@@ -49,7 +49,7 @@ export default function ProductivityMetrics({ refreshTrigger }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">📊 Tus Métricas</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white"> Tus Métricas</h2>
         <select
           value={timeFrame}
           onChange={(e) => setTimeFrame(e.target.value)}
@@ -68,25 +68,21 @@ export default function ProductivityMetrics({ refreshTrigger }) {
             <MetricCard
               label="Tareas completadas"
               value={metrics.completed_tasks || 0}
-              icon="✅"
               color="green"
             />
             <MetricCard
               label="Total de tareas"
               value={metrics.total_tasks || 0}
-              icon="📝"
               color="blue"
             />
             <MetricCard
               label="Sesiones Pomodoro"
               value={metrics.focus_sessions || 0}
-              icon="🍅"
               color="red"
             />
             <MetricCard
               label="Minutos de enfoque"
               value={metrics.focus_minutes || 0}
-              icon="⏱️"
               color="purple"
             />
           </div>
@@ -114,7 +110,7 @@ export default function ProductivityMetrics({ refreshTrigger }) {
             onClick={loadMetrics}
             className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all"
           >
-            🔄 Actualizar métricas
+             Actualizar métricas
           </button>
         </div>
       ) : (

@@ -58,7 +58,7 @@ function Dashboard() {
   // Redirigir a admin si el usuario es administrador
   useEffect(() => {
     if (!loading && isAuthenticated && user?.role === 'admin') {
-      console.log('👑 Admin detectado, redirigiendo a panel de administración')
+      console.log(' Admin detectado, redirigiendo a panel de administración')
       navigate('/admin')
     }
   }, [user, loading, isAuthenticated, navigate])
@@ -87,11 +87,11 @@ function Dashboard() {
         
         // Cargar likes DESPUÉS de que los posts estén listos
         const likedPostIds = await postsService.getUserLikedPosts()
-        console.log('📥 Raw liked IDs from server:', likedPostIds)
+        console.log('Raw liked IDs from server:', likedPostIds)
         
         // Convertir IDs a números
         const normalizedLikedIds = (likedPostIds || []).map(id => Number(id))
-        console.log('✅ Normalized liked IDs:', normalizedLikedIds)
+        console.log('ormalized liked IDs:', normalizedLikedIds)
         
         const likesSet = new Set(normalizedLikedIds)
         console.log('✅ Setting userLikes Set:', Array.from(likesSet))
@@ -923,7 +923,7 @@ function Dashboard() {
                     htmlFor="post-file-input"
                     className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer text-sm font-medium"
                   >
-                    📎 Agregar archivo
+                     Agregar archivo
                   </label>
                 </div>
                 
@@ -1103,7 +1103,7 @@ function Dashboard() {
                       onClick={() => setSharePostId(post.id)}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400 transition-colors font-semibold"
                     >
-                      📤 Compartir
+                      📤 
                     </button>
                   </div>
                 </div>
@@ -1123,7 +1123,7 @@ function Dashboard() {
           {/* Categories Widget */}
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-              📚 Categorías
+               Categorías
             </h3>
             <div className="space-y-2">
               {categories.map((cat) => (
@@ -1140,7 +1140,7 @@ function Dashboard() {
           {/* Trending Widget */}
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-              🔥 Trending
+               Trending
             </h3>
             <div className="space-y-3">
               {[

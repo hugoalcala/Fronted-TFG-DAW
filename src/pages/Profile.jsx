@@ -521,7 +521,7 @@ export default function Profile() {
           {/* Información Personal */}
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              📋 Información Personal
+               Información Personal
             </h2>
             <div className="space-y-3">
               <div>
@@ -535,7 +535,7 @@ export default function Profile() {
               <div>
                 <label className="text-sm text-gray-600 dark:text-gray-400">Tipo de Usuario</label>
                 <p className="text-gray-900 dark:text-white font-medium">
-                  {user?.role === 'teacher' ? '👨‍🏫 Profesor' : '👨‍🎓 Estudiante'}
+                  {user?.role === 'teacher' ? ' Profesor' : ' Estudiante'}
                 </p>
               </div>
               {/* Mostrar precio solo si es profesor */}
@@ -582,7 +582,7 @@ export default function Profile() {
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              ⭐ Tus Intereses
+               Tus Intereses
             </h2>
             {!isEditingInterests && (
               <button
@@ -873,7 +873,7 @@ export default function Profile() {
                 {user?.role === 'teacher' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                      Precio por hora 💰
+                      Precio por hora 
                     </label>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-600 dark:text-gray-400">$</span>

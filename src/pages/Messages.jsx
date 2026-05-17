@@ -167,7 +167,7 @@ export default function Messages() {
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col">
           <div className="p-6 border-b border-gray-200 dark:border-gray-800">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              💬 Mensajes
+               Mensajes
             </h2>
           </div>
 

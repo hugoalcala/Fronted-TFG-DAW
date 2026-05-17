@@ -281,7 +281,7 @@ export default function PomodoroTimer({ onSessionComplete }) {
       />
 
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">
-        {isBreak ? '☕ Descanso' : '⏱️ Pomodoro'}
+        {isBreak ? ' Descanso' : ' Pomodoro'}
       </h2>
 
       {/* Temporizador principal */}
@@ -332,7 +332,7 @@ export default function PomodoroTimer({ onSessionComplete }) {
       {/* Tiempo personalizado de concentración */}
       <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          ⏱️ Tiempo de concentración (minutos):
+           Tiempo de concentración (minutos):
         </label>
         <div className="flex gap-2 items-center">
           <input
@@ -381,19 +381,19 @@ export default function PomodoroTimer({ onSessionComplete }) {
               : 'bg-green-500 hover:bg-green-600'
           }`}
         >
-          {isActive ? '⏸️ Pausar' : '▶️ Iniciar'}
+          {isActive ? ' Pausar' : 'Iniciar'}
         </button>
         <button
           onClick={resetTimer}
           className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all"
         >
-          🔄 Reiniciar
+           Reiniciar
         </button>
         <button
           onClick={skipSession}
           className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all"
         >
-          ⏭️ Saltar
+         Saltar
         </button>
       </div>
 
@@ -401,7 +401,7 @@ export default function PomodoroTimer({ onSessionComplete }) {
       <div className="mt-4">
         {notificationPermission === 'granted' ? (
           <div className="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg text-sm text-center font-medium">
-            🔔 Notificaciones habilitadas
+             Notificaciones habilitadas
           </div>
         ) : notificationPermission === 'denied' ? (
           <div className="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg text-sm text-center">
@@ -413,19 +413,9 @@ export default function PomodoroTimer({ onSessionComplete }) {
             onClick={checkAndRequestNotificationPermission}
             className="w-full px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-all"
           >
-            🔔 Habilitar notificaciones
+             Habilitar notificaciones
           </button>
         )}
-      </div>
-
-      {/* Instrucciones */}
-      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg text-sm text-gray-700 dark:text-gray-300">
-        <p className="font-semibold mb-2">💡 Técnica Pomodoro:</p>
-        <ul className="list-disc list-inside space-y-1">
-          <li>Elige tu tiempo de concentración (1-60 minutos)</li>
-          <li>5 minutos de descanso automático</li>
-          <li>Después de 4 ciclos, descanso mayor recomendado</li>
-        </ul>
       </div>
     </div>
   )
