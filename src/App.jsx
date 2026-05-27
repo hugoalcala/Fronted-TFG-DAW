@@ -15,6 +15,7 @@ import TeacherProfile from './pages/TeacherProfile'
 import Messages from './pages/Messages'
 import Productivity from './pages/Productivity'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminNotices from './pages/AdminNotices'
 
 // Google Client ID desde variables de entorno
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID'
@@ -199,6 +200,14 @@ function App() {
                 element={
                   <AdminRoute>
                     <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/notices"
+                element={
+                  <AdminRoute>
+                    <AdminNotices />
                   </AdminRoute>
                 }
               />

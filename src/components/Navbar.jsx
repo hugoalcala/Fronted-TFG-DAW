@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../context/AuthContext'
+import { messagesService } from '../services/messagesService'
 import logo from '../assets/educonnect_logo.png'
 
 export default function Navbar() {
@@ -9,6 +10,40 @@ export default function Navbar() {
   const { isDark, toggleTheme } = useTheme()
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Cargar mensajes sin leer cada 30 segundos y cuando vuelve a la pestaña
+  useEffect(() => {
+    const loadUnreadMessages = async () => {
+      try {
+        const conversations = await messagesService.getConversations()
+        const conversationsArray = Array.isArray(conversations) ? conversations : (conversations?.data || [])
+        const unread = conversationsArray.reduce((sum, conv) => sum + (conv.unread || 0), 0)
+        setUnreadCount(unread)
+      } catch (err) {
+        console.error('Error loading unread messages:', err)
+      }
+    }
+
+    loadUnreadMessages()
+    
+    // Recargar cada 30 segundos
+    const interval = setInterval(loadUnreadMessages, 30000)
+    
+    // Recargar cuando el usuario vuelve a la ventana
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadUnreadMessages()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
 
   const handleLogout = async () => {
     await logout()
@@ -67,6 +102,11 @@ export default function Navbar() {
               className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors relative"
             >
                Mensajes
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
             </button>
 
             {/* Productividad */}
@@ -76,6 +116,16 @@ export default function Navbar() {
             >
                Productividad
             </button>
+
+            {/* Admin: Avisos */}
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => navigate('/admin/notices')}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
+              >
+                Avisos
+              </button>
+            )}
 
             {/* Perfil con rol */}
             <button
@@ -164,9 +214,14 @@ export default function Navbar() {
                 navigate('/messages')
                 setMenuOpen(false)
               }}
-              className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+              className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg relative"
             >
                Mensajes
+              {unreadCount > 0 && (
+                <span className="inline-flex items-center justify-center px-2 py-1 ml-2 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -178,6 +233,18 @@ export default function Navbar() {
             >
               Productividad
             </button>
+
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => {
+                  navigate('/admin/notices')
+                  setMenuOpen(false)
+                }}
+                className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+              >
+                Avisos
+              </button>
+            )}
 
             <button
               onClick={() => {

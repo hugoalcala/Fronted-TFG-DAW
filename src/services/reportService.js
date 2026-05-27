@@ -20,7 +20,7 @@ export const reportService = {
       if (filters.sortBy) params.append('sort_by', filters.sortBy)
       if (filters.sortOrder) params.append('sort_order', filters.sortOrder)
 
-      const url = `${API_BASE_URL}/admin/reports${params.toString() ? '?' + params : ''}`
+      const url = `${API_BASE_URL}/messages/reports${params.toString() ? '?' + params : ''}`
       logger.debug('📋 Fetching reports from:', url)
 
       const response = await fetch(url, {
@@ -51,7 +51,7 @@ export const reportService = {
   // Obtener detalles de una denuncia
   async getReportDetails(reportId) {
     try {
-      const url = `${API_BASE_URL}/admin/reports/${reportId}`
+      const url = `${API_BASE_URL}/messages/reports/${reportId}`
       logger.debug('📋 Fetching report details from:', url)
 
       const response = await fetch(url, {
@@ -81,9 +81,9 @@ export const reportService = {
   async approveReport(reportId, adminNotes = '') {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/admin/reports/${reportId}/approve`,
+        `${API_BASE_URL}/messages/reports/${reportId}/approve`,
         {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Content-Type': 'application/json',
@@ -110,9 +110,9 @@ export const reportService = {
   async rejectReport(reportId, adminNotes = '') {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/admin/reports/${reportId}/reject`,
+        `${API_BASE_URL}/messages/reports/${reportId}/reject`,
         {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Content-Type': 'application/json',
