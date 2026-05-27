@@ -449,6 +449,12 @@ export default function AdminDashboard() {
             
             <div className="flex items-center gap-4">
               <button
+                onClick={() => navigate('/admin/notices')}
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-sm font-medium"
+              >
+                Avisos
+              </button>
+              <button
                 onClick={toggleTheme}
                 className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
@@ -468,28 +474,28 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6 rounded-lg">
             <div>
               <p className="text-blue-600 dark:text-blue-400 text-sm font-medium">Usuarios</p>
               <p className="text-3xl font-bold text-blue-900 dark:text-blue-200 mt-2">{stats.totalUsers}</p>
             </div>
           </div>
 
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-6">
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-6 rounded-lg">
             <div>
               <p className="text-green-600 dark:text-green-400 text-sm font-medium">Profesores</p>
               <p className="text-3xl font-bold text-green-900 dark:text-green-200 mt-2">{stats.totalTeachers}</p>
             </div>
           </div>
 
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-6">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-6 rounded-lg">
             <div>
               <p className="text-amber-600 dark:text-amber-400 text-sm font-medium">Pendientes</p>
               <p className="text-3xl font-bold text-amber-900 dark:text-amber-200 mt-2">{stats.pendingApplications}</p>
             </div>
           </div>
 
-          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 p-6">
+          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 p-6 rounded-lg">
             <div>
               <p className="text-purple-600 dark:text-purple-400 text-sm font-medium">Posts</p>
               <p className="text-3xl font-bold text-purple-900 dark:text-purple-200 mt-2">{stats.totalPosts}</p>
@@ -1151,43 +1157,65 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">Usuario Denunciado</label>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {selectedReport.reported_user?.name || 'Desconocido'} ({selectedReport.reported_user?.email || 'Sin email'})
-                </p>
+                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold block mb-1">Denunciante</label>
+                <div className="text-sm text-gray-900 dark:text-white">
+                  <p className="font-medium">{selectedReport.reporter?.name || 'Desconocido'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{selectedReport.reporter?.email || 'Sin email'}</p>
+                </div>
+              </div>
+
+              <div className="border-l-2 border-gray-300 dark:border-gray-600 pl-3">
+                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold block mb-1">Usuario Denunciado</label>
+                <div className="text-sm text-gray-900 dark:text-white">
+                  <p className="font-medium">{selectedReport.reported_user?.name || 'Desconocido'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{selectedReport.reported_user?.email || 'Sin email'}</p>
+                </div>
               </div>
 
               <div>
-                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">Razón</label>
+                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold block mb-1">Motivo</label>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{getReasonLabel(selectedReport.reason)}</p>
               </div>
 
-              <div>
-                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">Descripción</label>
-                <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                  {selectedReport.description || 'Sin descripción'}
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold block mb-2">Detalles</label>
+                <p className="text-sm text-gray-900 dark:text-white">
+                  {selectedReport.details || 'Sin descripción adicional'}
                 </p>
               </div>
 
-              <div>
-                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">Fecha</label>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {new Date(selectedReport.created_at).toLocaleDateString()} - {new Date(selectedReport.created_at).toLocaleTimeString()}
-                </p>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                <p>Reportado el {new Date(selectedReport.created_at).toLocaleDateString()} a las {new Date(selectedReport.created_at).toLocaleTimeString()}</p>
+                {selectedReport.reviewed_at && (
+                  <p>Revisado el {new Date(selectedReport.reviewed_at).toLocaleDateString()} a las {new Date(selectedReport.reviewed_at).toLocaleTimeString()}</p>
+                )}
               </div>
 
               {selectedReport.status === 'pending' && (
                 <div>
                   <label className="block text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold mb-2">
-                    Notas del Administrador
+                    Agregar notas
                   </label>
                   <textarea
                     value={reportAdminNotes}
                     onChange={(e) => setReportAdminNotes(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows="3"
-                    placeholder="Agregar notas (opcional)"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                    rows="2"
+                    placeholder="Opcional..."
                   />
+                </div>
+              )}
+
+              {selectedReport.admin_notes && (
+                <div className="text-sm">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold mb-1">Notas</p>
+                  <p className="text-gray-900 dark:text-white">{selectedReport.admin_notes}</p>
+                </div>
+              )}
+
+              {selectedReport.reviewer && (
+                <div className="text-sm">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold mb-1">Revisado por {selectedReport.reviewer.name}</p>
                 </div>
               )}
             </div>
