@@ -11,29 +11,60 @@ export default function Navbar() {
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [pendingClassesCount, setPendingClassesCount] = useState(0)
 
-  // Cargar mensajes sin leer cada 30 segundos y cuando vuelve a la pestaña
+  // Cargar mensajes sin leer y solicitudes pendientes cada 30 segundos y cuando vuelve a la pestaña
   useEffect(() => {
-    const loadUnreadMessages = async () => {
+    const loadNotifications = async () => {
       try {
+        const authToken = localStorage.getItem('authToken')
+        
+        // Cargar mensajes no leídos
         const conversations = await messagesService.getConversations()
         const conversationsArray = Array.isArray(conversations) ? conversations : (conversations?.data || [])
         const unread = conversationsArray.reduce((sum, conv) => sum + (conv.unread || 0), 0)
         setUnreadCount(unread)
+        
+        // Cargar solicitudes pendientes si es profesor
+        if (user?.role === 'teacher' && authToken) {
+          try {
+            const response = await fetch(
+              `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/bookings`,
+              {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${authToken}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            )
+            
+            if (response.ok) {
+              const data = await response.json()
+              const bookings = data.data || []
+              const pendingBookings = bookings.filter(
+                b => b.teacher_id === user?.id && b.status === 'pending'
+              )
+              setPendingClassesCount(pendingBookings.length)
+            }
+          } catch (err) {
+            console.error('Error loading pending bookings:', err)
+          }
+        }
       } catch (err) {
-        console.error('Error loading unread messages:', err)
+        console.error('Error loading notifications:', err)
       }
     }
 
-    loadUnreadMessages()
+    loadNotifications()
     
     // Recargar cada 30 segundos
-    const interval = setInterval(loadUnreadMessages, 30000)
+    const interval = setInterval(loadNotifications, 30000)
     
     // Recargar cuando el usuario vuelve a la ventana
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        loadUnreadMessages()
+        loadNotifications()
       }
     }
     
@@ -43,7 +74,7 @@ export default function Navbar() {
       clearInterval(interval)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [])
+  }, [user])
 
   const handleLogout = async () => {
     await logout()
@@ -90,9 +121,14 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={() => navigate('/my-classes')}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-900 dark:hover:text-blue-400 transition-colors relative"
               >
                  Mis Clases
+                {pendingClassesCount > 0 && (
+                  <span className="absolute top-1 right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-orange-600 rounded-full">
+                    {pendingClassesCount}
+                  </span>
+                )}
               </button>
             )}
 
@@ -203,9 +239,14 @@ export default function Navbar() {
                   navigate('/my-classes')
                   setMenuOpen(false)
                 }}
-                className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg relative"
               >
                  Mis Clases
+                {pendingClassesCount > 0 && (
+                  <span className="inline-flex items-center justify-center px-2 py-1 ml-2 text-xs font-bold leading-none text-white bg-orange-600 rounded-full">
+                    {pendingClassesCount}
+                  </span>
+                )}
               </button>
             )}
 

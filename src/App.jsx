@@ -16,6 +16,10 @@ import Messages from './pages/Messages'
 import Productivity from './pages/Productivity'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminNotices from './pages/AdminNotices'
+import PaymentSuccess from './pages/PaymentSuccess'
+import PaymentCancel from './pages/PaymentCancel'
+import Bookings from './pages/Bookings'
+import MyClasses from './pages/MyClasses'
 
 // Google Client ID desde variables de entorno
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID'
@@ -209,6 +213,38 @@ function App() {
                   <AdminRoute>
                     <AdminNotices />
                   </AdminRoute>
+                }
+              />
+              <Route
+                path="/payment-success"
+                element={
+                  <ProtectedRoute>
+                    <PaymentSuccess />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment-cancel"
+                element={
+                  <ProtectedRoute>
+                    <PaymentCancel />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookings"
+                element={
+                  <ProtectedRoute>
+                    <Bookings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-classes"
+                element={
+                  <ProtectedRoute>
+                    <MyClasses />
+                  </ProtectedRoute>
                 }
               />
               <Route path="/auth/google/callback" element={<GoogleCallbackHandler />} />

@@ -6,6 +6,7 @@ import { teachersService } from '../services/teachersService'
 import { ratingsService } from '../services/ratingsService'
 import { messagesService } from '../services/messagesService'
 import { normalizeTeacher } from '../utils/teacherUtils'
+import HireTeacherModal from '../components/HireTeacherModal'
 
 export default function TeacherProfile() {
   const { id: teacherId } = useParams()
@@ -28,6 +29,9 @@ export default function TeacherProfile() {
   const [reviewError, setReviewError] = useState(null)
   const [reviewSuccessType, setReviewSuccessType] = useState(null) // 'created' | 'edited' | 'deleted'
   const reviewSuccessTimerRef = useRef(null)
+
+  // Estados para contratar profesor
+  const [showHireModal, setShowHireModal] = useState(false)
 
   // Estados para editar y eliminar reseñas
   const [editingRatingId, setEditingRatingId] = useState(null)
@@ -624,16 +628,22 @@ export default function TeacherProfile() {
               )}
 
               {/* Botones de Acción */}
-              <div className="flex gap-4">
+              <div className="flex gap-3 flex-wrap">
                 <button
                   onClick={handleContactTeacher}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex-1 min-w-fit"
                 >
                   💬 Enviar mensaje
                 </button>
                 <button
+                  onClick={() => setShowHireModal(true)}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex-1 min-w-fit"
+                >
+                  💼 Contratar
+                </button>
+                <button
                   onClick={() => setShowReviewForm(!showReviewForm)}
-                  className="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-medium"
+                  className="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-medium flex-1 min-w-fit"
                 >
                   ⭐ Dejar reseña
                 </button>
@@ -981,6 +991,20 @@ export default function TeacherProfile() {
           )}
         </div>
       </div>
+
+      {/* Modal de contratación */}
+      {teacher && (
+        <HireTeacherModal
+          teacher={teacher}
+          isOpen={showHireModal}
+          onClose={() => setShowHireModal(false)}
+          onSuccess={() => {
+            setShowHireModal(false)
+            // Mostrar mensaje de éxito si es necesario
+            alert('¡Contratación realizada con éxito! Pronto te contactarán.')
+          }}
+        />
+      )}
     </AuthLayout>
   )
 }
