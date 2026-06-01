@@ -606,12 +606,6 @@ export default function TeacherProfile() {
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Estudiantes</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {teacher.students_count ?? 0}
-                  </p>
-                </div>
                 <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                   <p className="text-sm text-gray-600 dark:text-gray-400">Precio/hora</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">
