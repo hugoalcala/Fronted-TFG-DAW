@@ -253,9 +253,6 @@ export default function Teachers() {
                       {teacher.rating ? teacher.rating.toFixed(1) : 'N/A'}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-600 dark:text-gray-400">
-                    {(teacher.students_count ?? teacher.students ?? 0)} estudiantes
-                  </span>
                 </div>
 
                 {/* Price and Button */}
