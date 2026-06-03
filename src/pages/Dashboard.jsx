@@ -12,7 +12,8 @@ function Dashboard() {
   const { user, loading, isAuthenticated, logout } = useAuth()
   const [posts, setPosts] = useState([])
   const [postsLoading, setPostsLoading] = useState(true)
-  const [categories] = useState(['Programación', 'Matemáticas', 'Inglés', 'Historia', 'Ciencias'])
+  const [hashtagSearch, setHashtagSearch] = useState('')
+  const [keywordSearch, setKeywordSearch] = useState('')
   const [newPostContent, setNewPostContent] = useState('')
   const [newPostFile, setNewPostFile] = useState(null)
   const [newPostFilePreview, setNewPostFilePreview] = useState(null)
@@ -956,8 +957,15 @@ function Dashboard() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 dark:border-blue-400 mx-auto mb-4"></div>
                 <p className="text-gray-600 dark:text-gray-400">Cargando posts...</p>
               </div>
-            ) : posts.length > 0 ? (
-              posts.map((post) => (
+            ) : (() => {
+              const filteredPosts = posts.filter(p => {
+                const content = p.content?.toLowerCase() || ''
+                const matchesHashtag = hashtagSearch ? content.includes(hashtagSearch.toLowerCase()) : true
+                const matchesKeyword = keywordSearch ? content.includes(keywordSearch.toLowerCase()) : true
+                return matchesHashtag && matchesKeyword
+              })
+              return filteredPosts.length > 0 ? (
+              filteredPosts.map((post) => (
                 <div
                   key={post.id}
                   className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6 hover:shadow-xl transition-shadow relative"
@@ -1111,37 +1119,74 @@ function Dashboard() {
             ) : (
               <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
                 <p className="text-gray-600 dark:text-gray-400">
-                  No hay posts todavía. ¡Sé el primero en compartir algo!
+                  {hashtagSearch || keywordSearch
+                    ? `No hay posts con ${[keywordSearch, hashtagSearch].filter(Boolean).join(' + ')}`
+                    : 'No hay posts todavía. ¡Sé el primero en compartir algo!'}
                 </p>
+                {(hashtagSearch || keywordSearch) && (
+                  <button
+                    onClick={() => { setHashtagSearch(''); setKeywordSearch('') }}
+                    className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Ver todos los posts
+                  </button>
+                )}
               </div>
-            )}
+            )
+            })()}
           </div>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Categories Widget */}
+          {/* Keyword Search Widget */}
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-               Categorías
+              Buscar posts
             </h3>
-            <div className="space-y-2">
-              {categories.map((cat) => (
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+              <input
+                type="text"
+                value={keywordSearch}
+                onChange={(e) => setKeywordSearch(e.target.value)}
+                placeholder="Buscar por palabra..."
+                className="w-full pl-8 pr-9 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              {keywordSearch && (
                 <button
-                  key={cat}
-                  className="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                  onClick={() => setKeywordSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none"
                 >
-                  {cat}
+                  ✕
                 </button>
-              ))}
+              )}
             </div>
           </div>
 
           {/* Trending Widget */}
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-               Trending
+              Trending
             </h3>
+            <div className="relative mb-4">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 font-bold select-none text-sm">#</span>
+              <input
+                type="text"
+                value={hashtagSearch.startsWith('#') ? hashtagSearch.slice(1) : hashtagSearch}
+                onChange={(e) => setHashtagSearch(e.target.value ? `#${e.target.value.replace(/^#/, '')}` : '')}
+                placeholder="Buscar por hashtag..."
+                className="w-full pl-6 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              {hashtagSearch && (
+                <button
+                  onClick={() => setHashtagSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm leading-none"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
             <div className="space-y-3">
               {[
                 '#ReactHooks',
@@ -1151,7 +1196,12 @@ function Dashboard() {
               ].map((trend) => (
                 <button
                   key={trend}
-                  className="w-full text-left px-3 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                  onClick={() => setHashtagSearch(hashtagSearch === trend ? '' : trend)}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+                    hashtagSearch === trend
+                      ? 'bg-blue-600 text-white'
+                      : 'text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900'
+                  }`}
                 >
                   {trend}
                 </button>
