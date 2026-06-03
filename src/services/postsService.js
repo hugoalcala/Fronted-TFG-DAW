@@ -348,6 +348,21 @@ export const postsService = {
       throw error
     }
   },
+
+  async reportPost(postId, reason, details = '') {
+    const response = await fetch(`${API_BASE_URL}/posts/${postId}/report`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ reason, details }),
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.message || 'Error al denunciar el post')
+    return data
+  },
 }
 
 export default postsService

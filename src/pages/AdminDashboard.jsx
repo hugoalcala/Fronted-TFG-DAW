@@ -324,21 +324,26 @@ export default function AdminDashboard() {
   const loadReports = async () => {
     setLoadingReports(true)
     try {
-      console.log('📋 Cargando denuncias con filtros:', reportsFilters)
-      const response = await reportService.getAllReports(reportsFilters)
-      console.log('📋 Respuesta del servidor:', response)
-      
-      // El backend devuelve: { success: true, data: [...], total: X, per_page: Y, current_page: Z, last_page: W }
-      const reportsData = Array.isArray(response) ? response : (response.data || [])
-      setReports(reportsData)
-      
-      if (response.last_page || response.total) {
-        setReportsTotalPages(response.last_page || 1)
-      } else {
-        setReportsTotalPages(1)
-      }
-      
-      console.log('Denuncias cargadas:', reportsData.length)
+      const [msgRes, ratingRes] = await Promise.allSettled([
+        reportService.getAllReports({ ...reportsFilters, perPage: 100 }),
+        reportService.getAllRatingReports(reportsFilters),
+      ])
+
+      const msgReports = (msgRes.status === 'fulfilled'
+        ? (Array.isArray(msgRes.value) ? msgRes.value : (msgRes.value.data || []))
+        : []
+      ).map(r => ({ ...r, _source: 'message' }))
+
+      const ratingReports = (ratingRes.status === 'fulfilled'
+        ? (Array.isArray(ratingRes.value) ? ratingRes.value : (ratingRes.value.data || []))
+        : []
+      ).map(r => ({ ...r, _source: 'rating' }))
+
+      const merged = [...msgReports, ...ratingReports]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+      setReports(merged)
+      setReportsTotalPages(1)
     } catch (err) {
       console.error('❌ Error loading reports:', err)
       showNotification('Error al cargar denuncias', 'error')
@@ -350,8 +355,10 @@ export default function AdminDashboard() {
 
   const openReportDetail = async (report) => {
     try {
-      const details = await reportService.getReportDetails(report.id)
-      setSelectedReport(details)
+      const details = report._source === 'rating'
+        ? await reportService.getRatingReportDetails(report.id)
+        : await reportService.getReportDetails(report.id)
+      setSelectedReport({ ...details, _source: report._source })
       setShowReportDetailModal(true)
     } catch (err) {
       showNotification('Error al cargar detalles de la denuncia', 'error')
@@ -361,7 +368,11 @@ export default function AdminDashboard() {
   const handleApproveReport = async (reportId) => {
     try {
       setReportActionLoading(true)
-      await reportService.approveReport(reportId, reportAdminNotes)
+      if (selectedReport?._source === 'rating') {
+        await reportService.approveRatingReport(reportId, reportAdminNotes)
+      } else {
+        await reportService.approveReport(reportId, reportAdminNotes)
+      }
       showNotification('Denuncia aprobada correctamente', 'success')
       setShowReportDetailModal(false)
       setReportAdminNotes('')
@@ -377,7 +388,11 @@ export default function AdminDashboard() {
   const handleRejectReport = async (reportId) => {
     try {
       setReportActionLoading(true)
-      await reportService.rejectReport(reportId, reportAdminNotes)
+      if (selectedReport?._source === 'rating') {
+        await reportService.rejectRatingReport(reportId, reportAdminNotes)
+      } else {
+        await reportService.rejectReport(reportId, reportAdminNotes)
+      }
       showNotification('Denuncia rechazada correctamente', 'success')
       setShowReportDetailModal(false)
       setReportAdminNotes('')
@@ -993,7 +1008,25 @@ export default function AdminDashboard() {
                                 #{report.id}
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                {report.reported_user?.name || 'Desconocido'}
+                                {report._source === 'rating' ? (
+                                  <div>
+                                    <span className="inline-block px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 text-xs rounded font-medium mb-1">⭐ Reseña</span>
+                                    <p className="font-medium">{report.teacher?.name || 'Desconocido'}</p>
+                                    {report.rating?.comment && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">"{report.rating.comment}"</p>
+                                    )}
+                                  </div>
+                                ) : report.report_type === 'post' ? (
+                                  <div>
+                                    <span className="inline-block px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 text-xs rounded font-medium mb-1">📄 Post</span>
+                                    <p className="font-medium">{report.reported_user?.name || 'Desconocido'}</p>
+                                    {report.post?.content && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">"{report.post.content}"</p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  report.reported_user?.name || 'Desconocido'
+                                )}
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                                 {getReasonLabel(report.reason)}
@@ -1165,12 +1198,39 @@ export default function AdminDashboard() {
               </div>
 
               <div className="border-l-2 border-gray-300 dark:border-gray-600 pl-3">
-                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold block mb-1">Usuario Denunciado</label>
+                <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold block mb-1">
+                  {selectedReport._source === 'rating' ? 'Profesor Denunciado' : selectedReport.report_type === 'post' ? 'Autor del Post' : 'Usuario Denunciado'}
+                </label>
                 <div className="text-sm text-gray-900 dark:text-white">
-                  <p className="font-medium">{selectedReport.reported_user?.name || 'Desconocido'}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{selectedReport.reported_user?.email || 'Sin email'}</p>
+                  <p className="font-medium">
+                    {selectedReport._source === 'rating'
+                      ? selectedReport.teacher?.name || 'Desconocido'
+                      : selectedReport.reported_user?.name || 'Desconocido'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {selectedReport._source === 'rating'
+                      ? selectedReport.teacher?.email || 'Sin email'
+                      : selectedReport.reported_user?.email || 'Sin email'}
+                  </p>
                 </div>
               </div>
+
+              {selectedReport._source === 'rating' && selectedReport.rating && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
+                  <label className="text-xs text-yellow-700 dark:text-yellow-300 uppercase font-semibold block mb-1">⭐ Reseña Denunciada</label>
+                  <p className="text-sm text-gray-900 dark:text-white mb-1">{selectedReport.rating.comment || 'Sin comentario'}</p>
+                  {selectedReport.rating.rating && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Puntuación: {selectedReport.rating.rating}/5</p>
+                  )}
+                </div>
+              )}
+
+              {selectedReport.report_type === 'post' && selectedReport.post && (
+                <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                  <label className="text-xs text-orange-600 dark:text-orange-400 uppercase font-semibold block mb-1">📄 Post Denunciado</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{selectedReport.post.content}</p>
+                </div>
+              )}
 
               <div>
                 <label className="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold block mb-1">Motivo</label>

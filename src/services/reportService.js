@@ -135,6 +135,73 @@ export const reportService = {
     }
   },
 
+  // ---- Denuncias de reseñas de profesores (/api/admin/reports) ----
+
+  async getAllRatingReports(filters = {}) {
+    const params = new URLSearchParams()
+    if (filters.status && filters.status !== 'all') params.append('status', filters.status)
+    if (filters.reason) params.append('reason', filters.reason)
+    params.append('per_page', '100')
+
+    const response = await fetch(
+      `${API_BASE_URL}/admin/reports${params.toString() ? '?' + params : ''}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Accept': 'application/json',
+        },
+      }
+    )
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    return response.json()
+  },
+
+  async getRatingReportDetails(reportId) {
+    const response = await fetch(`${API_BASE_URL}/admin/reports/${reportId}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'Accept': 'application/json',
+      },
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const data = await response.json()
+    return data.data || data
+  },
+
+  async approveRatingReport(reportId, adminNotes = '') {
+    const response = await fetch(`${API_BASE_URL}/admin/reports/${reportId}/approve`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ admin_notes: adminNotes }),
+    })
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || `HTTP ${response.status}`)
+    }
+    return response.json()
+  },
+
+  async rejectRatingReport(reportId, adminNotes = '') {
+    const response = await fetch(`${API_BASE_URL}/admin/reports/${reportId}/reject`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ admin_notes: adminNotes }),
+    })
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || `HTTP ${response.status}`)
+    }
+    return response.json()
+  },
+
   // Enviar mensaje a usuario (usado en el futuro para el sistema de chat/mensajería)
   // TODO: Integrar con la interfaz de chat cuando se implemente
   // Mantener este método para uso futuro en la notificación manual a usuarios sobre decisiones de denuncias

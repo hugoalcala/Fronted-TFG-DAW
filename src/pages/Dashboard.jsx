@@ -45,6 +45,10 @@ function Dashboard() {
   const [replyingToCommentId, setReplyingToCommentId] = useState(null) // Respondiendo a qué comentario
   const [replyText, setReplyText] = useState('') // Texto de la respuesta
   const [submittingReply, setSubmittingReply] = useState(false) // Enviando respuesta
+  const [reportingPostId, setReportingPostId] = useState(null) // Post que se está denunciando
+  const [reportReason, setReportReason] = useState('')
+  const [reportDetails, setReportDetails] = useState('')
+  const [submittingReport, setSubmittingReport] = useState(false)
   const menuTimerRef = useRef(null)
   const fileInputRef = useRef(null)
   const editFileInputRef = useRef(null)
@@ -849,6 +853,22 @@ function Dashboard() {
     </div>
   )
 
+  const handleReportPost = async () => {
+    if (!reportReason) return
+    try {
+      setSubmittingReport(true)
+      await postsService.reportPost(reportingPostId, reportReason, reportDetails)
+      setReportingPostId(null)
+      setReportReason('')
+      setReportDetails('')
+      alert('Denuncia enviada correctamente')
+    } catch (error) {
+      alert(error.message || 'Error al enviar la denuncia')
+    } finally {
+      setSubmittingReport(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -990,48 +1010,46 @@ function Dashboard() {
                       </div>
                     </div>
                     
-                    {/* Menú de opciones - solo para el autor */}
-                    {Number(user?.id) === Number(post.user_id) && (
-                      <div className="relative">
-                        <button 
-                          onClick={() => {
-                            console.log(`Toggle menu para post ${post.id}, user: ${user?.id}, post_user: ${post.user_id}`)
-                            setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)
-                          }}
-                          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    {/* Menú de opciones */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
+                        className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      >
+                        ⋯
+                      </button>
+
+                      {openMenuPostId === post.id && (
+                        <div
+                          className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 min-w-max"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          ⋯
-                        </button>
-                        
-                        {/* Dropdown Menu */}
-                        {openMenuPostId === post.id && (
-                          <div 
-                            className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 min-w-max"
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          {Number(user?.id) === Number(post.user_id) ? (
+                            <>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleEditPost(post) }}
+                                className="w-full text-left px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors text-sm"
+                              >
+                                ✏️ Editar
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id) }}
+                                className="w-full text-left px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-sm border-t border-gray-200 dark:border-gray-700"
+                              >
+                                🗑️ Eliminar
+                              </button>
+                            </>
+                          ) : (
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleEditPost(post)
-                              }}
-                              className="w-full text-left px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors text-sm"
+                              onClick={(e) => { e.stopPropagation(); setReportingPostId(post.id); setOpenMenuPostId(null) }}
+                              className="w-full text-left px-4 py-2 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors text-sm"
                             >
-                              ✏️ Editar
+                              🚩 Denunciar
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                console.log('📍 Click en eliminar para post:', post.id)
-                                handleDeletePost(post.id)
-                              }}
-                              className="w-full text-left px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-sm border-t border-gray-200 dark:border-gray-700 hover:font-semibold"
-                            >
-                              🗑️ Eliminar
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Post Content */}
@@ -1468,6 +1486,57 @@ function Dashboard() {
           </div>
         )
       })()}
+      {/* Modal de Denuncia */}
+      {reportingPostId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-800 p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">🚩 Denunciar post</h3>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Motivo</label>
+              <select
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+              >
+                <option value="">Selecciona un motivo...</option>
+                <option value="spam">Spam</option>
+                <option value="offensive_content">Contenido ofensivo</option>
+                <option value="inappropriate">Contenido inapropiado</option>
+                <option value="fake">Información falsa</option>
+                <option value="other">Otro</option>
+              </select>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Detalles (opcional)</label>
+              <textarea
+                value={reportDetails}
+                onChange={(e) => setReportDetails(e.target.value)}
+                placeholder="Describe el problema..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none text-sm"
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setReportingPostId(null); setReportReason(''); setReportDetails('') }}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleReportPost}
+                disabled={!reportReason || submittingReport}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingReport ? 'Enviando...' : 'Enviar denuncia'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthLayout>
   )
 }
