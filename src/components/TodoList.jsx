@@ -142,22 +142,22 @@ export default function TodoList() {
   const completionRate = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-6 overflow-x-hidden">
       <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white"> Mi Lista de Tareas</h2>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
-          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{tasks.length}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Total de tareas</div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+        <div className="bg-blue-50 dark:bg-blue-900 p-3 sm:p-4 rounded-lg text-center">
+          <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{tasks.length}</div>
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Total</div>
         </div>
-        <div className="bg-green-50 dark:bg-green-900 p-4 rounded-lg">
-          <div className="text-3xl font-bold text-green-600 dark:text-green-400">{completedCount}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Completadas</div>
+        <div className="bg-green-50 dark:bg-green-900 p-3 sm:p-4 rounded-lg text-center">
+          <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{completedCount}</div>
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Hechas</div>
         </div>
-        <div className="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg">
-          <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{completionRate}%</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Progreso</div>
+        <div className="bg-purple-50 dark:bg-purple-900 p-3 sm:p-4 rounded-lg text-center">
+          <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{completionRate}%</div>
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Progreso</div>
         </div>
       </div>
 
@@ -177,32 +177,34 @@ export default function TodoList() {
 
       {/* Formulario para nueva tarea */}
       <form onSubmit={addTask} className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-        <div className="flex gap-2 mb-3">
+        <div className="flex flex-col gap-2 mb-3">
           <input
             type="text"
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
             placeholder="Nueva tarea..."
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={newDueDate}
-            onChange={(e) => setNewDueDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            title="Fecha límite"
-          />
+          <div className="flex gap-2">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={newDueDate}
+              onChange={(e) => setNewDueDate(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Fecha límite"
+            />
+          </div>
         </div>
         <button
           type="submit"
@@ -214,47 +216,25 @@ export default function TodoList() {
       </form>
 
       {/* Filtros */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-            filter === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300'
-          }`}
-        >
-          Todas ({tasks.length})
-        </button>
-        <button
-          onClick={() => setFilter('pending')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-            filter === 'pending'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300'
-          }`}
-        >
-           Pendientes ({tasks.filter((t) => t.status === 'pending' || (!t.completed && t.status !== 'in_progress')).length})
-        </button>
-        <button
-          onClick={() => setFilter('in_progress')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-            filter === 'in_progress'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300'
-          }`}
-        >
-          En Progreso ({tasks.filter((t) => t.status === 'in_progress').length})
-        </button>
-        <button
-          onClick={() => setFilter('completed')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-            filter === 'completed'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300'
-          }`}
-        >
-          Completadas ({tasks.filter((t) => t.status === 'completed' || t.completed).length})
-        </button>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+        {[
+          { key: 'all', label: 'Todas', count: tasks.length },
+          { key: 'pending', label: 'Pendientes', count: tasks.filter((t) => t.status === 'pending' || (!t.completed && t.status !== 'in_progress')).length },
+          { key: 'in_progress', label: 'En Progreso', count: tasks.filter((t) => t.status === 'in_progress').length },
+          { key: 'completed', label: 'Completadas', count: tasks.filter((t) => t.status === 'completed' || t.completed).length },
+        ].map(({ key, label, count }) => (
+          <button
+            key={key}
+            onClick={() => setFilter(key)}
+            className={`px-2 py-2 rounded-lg font-medium transition-all text-sm text-center ${
+              filter === key
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300'
+            }`}
+          >
+            {label} ({count})
+          </button>
+        ))}
       </div>
 
       {/* Lista de tareas */}

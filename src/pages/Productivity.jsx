@@ -15,7 +15,7 @@ export default function Productivity() {
 
   return (
     <AuthLayout>
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8 overflow-x-hidden">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             Centro de Productividad

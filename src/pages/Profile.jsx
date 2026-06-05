@@ -462,36 +462,36 @@ export default function Profile() {
       <div className="max-w-2xl mx-auto">
         {/* Header Profile */}
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-8 mb-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
               {/* Avatar */}
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-4xl shadow-lg overflow-hidden">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-4xl shadow-lg overflow-hidden">
                 {user?.avatar_url ? (
-                  <img 
-                    src={user.avatar_url} 
-                    alt={user.name} 
+                  <img
+                    src={user.avatar_url}
+                    alt={user.name}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <span>👤</span>
                 )}
               </div>
-              
+
               {/* User Info */}
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate">
                   {user?.name || 'Usuario'}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-gray-600 dark:text-gray-400 mt-1 truncate">
                   {user?.email}
                 </p>
               </div>
             </div>
-            
+
             {/* Edit Button */}
-            <button 
+            <button
               onClick={handleOpenEditModal}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="self-start sm:self-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base whitespace-nowrap"
             >
               Editar Perfil
             </button>
