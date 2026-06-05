@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
-import { GoogleOAuthProvider } from '@react-oauth/google'
 import { ThemeProvider } from './hooks/useTheme'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -143,8 +142,7 @@ function GoogleCallbackHandler() {
 
 function App() {
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <BrowserRouter>
+    <BrowserRouter>
         <ThemeProvider>
           <AuthProvider>
             <Routes>
@@ -252,7 +250,6 @@ function App() {
           </AuthProvider>
         </ThemeProvider>
       </BrowserRouter>
-    </GoogleOAuthProvider>
   )
 }
 
