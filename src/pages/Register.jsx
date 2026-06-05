@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useGoogleLogin } from '@react-oauth/google'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../context/AuthContext'
 import authService from '../services/authService'
@@ -85,11 +84,7 @@ function Register() {
     }
   }
 
-  const googleLogin = useGoogleLogin({
-    onSuccess: handleGoogleSuccess,
-    onError: () => setError('Error al conectar con Google'),
-    flow: 'implicit'
-  })
+  const googleLogin = handleGoogleSuccess
 
   return (
     <>
