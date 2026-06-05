@@ -1072,14 +1072,14 @@ function Dashboard() {
                             className="w-full max-h-80 rounded-lg mb-4"
                           />
                         ) : (
-                          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 inline-flex items-center gap-4 mb-4">
-                            <span className="text-4xl">
-                              {post.file_type === 'pdf' ? '📄' : 
-                               post.file_type === 'document' ? '📝' : 
+                          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex items-center gap-4 mb-4 w-full overflow-hidden">
+                            <span className="text-4xl flex-shrink-0">
+                              {post.file_type === 'pdf' ? '📄' :
+                               post.file_type === 'document' ? '📝' :
                                post.file_type === 'archive' ? '📦' : '📎'}
                             </span>
-                            <div>
-                              <p className="text-sm font-bold text-gray-900 dark:text-white max-w-xs truncate">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
                                 {post.file_name || 'Archivo'}
                               </p>
                               <a 
