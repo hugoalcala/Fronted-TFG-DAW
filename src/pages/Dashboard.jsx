@@ -1082,9 +1082,11 @@ function Dashboard() {
                               <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
                                 {post.file_name || 'Archivo'}
                               </p>
-                              <a 
-                                href={post.file_url} 
-                                download
+                              <a
+                                href={post.file_url}
+                                download={post.file_name || 'archivo'}
+                                target="_blank"
+                                rel="noreferrer"
                                 className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                               >
                                 Descargar
