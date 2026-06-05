@@ -217,6 +217,11 @@ export default function AdminDashboard() {
 
   const handleViewCertificate = async (teacherId) => {
     try {
+      const teacher = pendingTeachers.find(t => t.id === teacherId)
+      if (teacher?.certificate_path?.startsWith('http')) {
+        window.open(teacher.certificate_path, '_blank')
+        return
+      }
       await adminService.viewCertificate(teacherId)
     } catch (error) {
       console.error('Error al ver certificado:', error)
