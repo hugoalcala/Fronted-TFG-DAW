@@ -224,8 +224,8 @@ export default function MyClasses() {
                   : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
               }`}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 self-start">
                   {/* Información del estudiante */}
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -238,26 +238,28 @@ export default function MyClasses() {
 
                   {/* Detalles de la clase */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div>
+                    <div className="flex flex-col">
                       <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">HORAS</p>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">{booking.hours}</p>
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">PRECIO/HORA</p>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">${booking.price_per_hour}</p>
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">TOTAL</p>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">${booking.total_amount}</p>
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">ESTADO</p>
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                      <span className={`mt-1 text-sm font-semibold ${
                         booking.status === 'pending'
-                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                          ? 'text-yellow-500 dark:text-yellow-300'
                           : booking.status === 'confirmed'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                          ? 'text-green-500 dark:text-green-400'
+                          : booking.status === 'cancelled'
+                          ? 'text-red-500 dark:text-red-400'
+                          : 'text-gray-500 dark:text-gray-400'
                       }`}>
                         {booking.status === 'pending' && 'Pendiente'}
                         {booking.status === 'confirmed' && 'Confirmada'}
