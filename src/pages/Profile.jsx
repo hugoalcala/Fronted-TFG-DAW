@@ -47,6 +47,7 @@ export default function Profile() {
     price_per_hour: '',
   })
   const [certificateFile, setCertificateFile] = useState(null)
+  const [isDragging, setIsDragging] = useState(false)
   
   // Estados para edición de perfil
   const [showEditModal, setShowEditModal] = useState(false)
@@ -72,49 +73,55 @@ export default function Profile() {
   // Lista de materias disponibles
   const availableSubjects = useMemo(() => AVAILABLE_SUBJECTS, [])
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      // Validar tipo de archivo (solo PDF)
-      const validTypes = ['application/pdf']
-      const isValidType = validTypes.includes(file.type)
-      const isValidExtension = file.name.toLowerCase().endsWith('.pdf')
-      
-      if (!isValidType && !isValidExtension) {
-        alert('Por favor sube solo archivos PDF')
-        return
-      }
-      
-      // Validar tamaño (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('El archivo es muy grande. Máximo 5MB')
-        return
-      }
-      
-      // Validar contenido (firma de archivo PDF)
-      try {
-        const arrayBuffer = await file.slice(0, 5).arrayBuffer()
-        const header = new Uint8Array(arrayBuffer)
-        // PDF signature: %PDF- (0x25 0x50 0x44 0x46 0x2D)
-        const isPDFSignature = 
-          header[0] === 0x25 && // %
-          header[1] === 0x50 && // P
-          header[2] === 0x44 && // D
-          header[3] === 0x46 && // F
-          header[4] === 0x2D    // -
-        
-        if (!isPDFSignature) {
-          alert('El archivo no es un PDF válido. Por favor sube un archivo PDF real.')
-          return
-        }
-      } catch (error) {
-        console.error('Error validando archivo:', error)
-        alert('Error al validar el archivo. Por favor intenta de nuevo.')
-        return
-      }
-      
-      setCertificateFile(file)
+  const validateAndSetCertificate = async (file) => {
+    if (!file) return
+
+    const validTypes = ['application/pdf']
+    const isValidType = validTypes.includes(file.type)
+    const isValidExtension = file.name.toLowerCase().endsWith('.pdf')
+
+    if (!isValidType && !isValidExtension) {
+      alert('Por favor sube solo archivos PDF')
+      return
     }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('El archivo es muy grande. Máximo 5MB')
+      return
+    }
+
+    try {
+      const arrayBuffer = await file.slice(0, 5).arrayBuffer()
+      const header = new Uint8Array(arrayBuffer)
+      const isPDFSignature =
+        header[0] === 0x25 &&
+        header[1] === 0x50 &&
+        header[2] === 0x44 &&
+        header[3] === 0x46 &&
+        header[4] === 0x2D
+
+      if (!isPDFSignature) {
+        alert('El archivo no es un PDF válido. Por favor sube un archivo PDF real.')
+        return
+      }
+    } catch (error) {
+      console.error('Error validando archivo:', error)
+      alert('Error al validar el archivo. Por favor intenta de nuevo.')
+      return
+    }
+
+    setCertificateFile(file)
+  }
+
+  const handleFileChange = async (e) => {
+    await validateAndSetCertificate(e.target.files[0])
+  }
+
+  const handleCertificateDrop = async (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    await validateAndSetCertificate(file)
   }
 
   // Función para manejar la selección/deselección de materias
@@ -1065,7 +1072,16 @@ export default function Profile() {
                         Sube tu título universitario, certificado o CV para verificación (Solo PDF - Máx 5MB)
                       </p>
                       
-                      <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+                      <div
+                        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                          isDragging
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400'
+                        }`}
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleCertificateDrop}
+                      >
                         <input
                           type="file"
                           id="certificate"
